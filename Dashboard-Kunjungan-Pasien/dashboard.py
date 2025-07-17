@@ -3,49 +3,51 @@ import pandas as pd
 import numpy as np
 import math
 import plotly.express as px
+import os
+import random
 
 # ========================
 # 🔧 Konfigurasi Halaman
 # ========================
-st.set_page_config(page_title="Dashboard Simulasi Monte Carlo", layout="wide")
-st.title("📊 Dashboard Simulasi Monte Carlo - Kelompok 6")
+logo_path = "images/images.png"
+if os.path.exists(logo_path):
+    st.set_page_config(page_title="Dashboard Simulasi Monte Carlo", layout="wide", page_icon=logo_path)
+else:
+    st.set_page_config(page_title="Dashboard Simulasi Monte Carlo", layout="wide", page_icon="📊")
 
 # ========================
-# Sidebar Navigasi
+# Sidebar Logo & Menu
 # ========================
+st.sidebar.image(logo_path, use_container_width=True)
 st.sidebar.header("📌 Menu Navigasi")
 menu = st.sidebar.radio("Pilih Halaman:", [
-    "Dashboard", "Data Train", "Frekuensi & Interval", "RNG LCG"
+    "Dashboard", "Data Train", "Frekuensi & Interval", "RNG LCG", "Simulasi Monte Carlo"
 ])
 
 # ========================
 # Path File Excel
 # ========================
-excel_path = "dataset/dataset.xlsx"  # Pastikan file ini ada di repo GitHub kamu
+excel_path = "dataset/dataset.xlsx"
 
 @st.cache_data
 def load_excel(sheet_name="DataTrain"):
-    try:
-        df = pd.read_excel(excel_path, sheet_name=sheet_name)
-        return df
-    except FileNotFoundError:
-        st.error(f"❌ File {excel_path} tidak ditemukan.")
+    if not os.path.exists(excel_path):
+        st.error(f"❌ File {excel_path} tidak ditemukan di repo. Pastikan file ada di folder dataset.")
         return pd.DataFrame()
+    try:
+        return pd.read_excel(excel_path, sheet_name=sheet_name)
     except Exception as e:
-        st.error(f"❌ Error: {e}")
+        st.error(f"❌ Gagal membaca file: {e}")
         return pd.DataFrame()
 
-# ========================
 # Load Data
-# ========================
 df = load_excel("DataTrain")
 
 # ========================
 # 🟥 HALAMAN: DASHBOARD
 # ========================
 if menu == "Dashboard":
-    st.subheader("📊 Ringkasan Data Pengunjung")
-
+    st.title("📊 Dashboard Simulasi Monte Carlo - Kelompok 6")
     if not df.empty:
         df.columns = df.columns.str.strip().str.lower()
         exclude_cols = ["id", "bulan", "tahun"]
@@ -62,7 +64,6 @@ if menu == "Dashboard":
         st.markdown(f"**Wilayah terbanyak:** {wilayah_terbanyak.capitalize()} ({nilai_terbanyak})")
         st.markdown(f"**Wilayah tersedikit:** {wilayah_tersedikit.capitalize()} ({nilai_tersedikit})")
 
-        # Visualisasi dengan Plotly
         fig = px.bar(total_per_wilayah, x=total_per_wilayah.index, y=total_per_wilayah.values,
                      labels={'x': 'Wilayah', 'y': 'Total Pengunjung'},
                      title="Total Pengunjung per Wilayah", text=total_per_wilayah.values)
@@ -75,7 +76,7 @@ if menu == "Dashboard":
 # 🟦 HALAMAN: DATA TRAIN
 # ========================
 elif menu == "Data Train":
-    st.subheader("📋 Data Train Pengunjung")
+    st.title("📋 Data Train Pengunjung")
     if not df.empty:
         st.dataframe(df, use_container_width=True)
     else:
@@ -85,21 +86,17 @@ elif menu == "Data Train":
 # 🟩 HALAMAN: FREKUENSI & INTERVAL
 # ================================
 elif menu == "Frekuensi & Interval":
-    st.subheader("📈 Distribusi Frekuensi per Daerah")
-
+    st.title("📈 Distribusi Frekuensi per Daerah")
     if not df.empty:
         df.columns = df.columns.str.strip().str.lower()
         exclude_cols = ["id", "bulan", "tahun"]
         daerah_cols = [col for col in df.columns if col not in exclude_cols]
 
-        daerah_options = ["Pilih daerah"] + daerah_cols
-        selected_daerah = st.selectbox("📍 Pilih Daerah:", daerah_options)
-
+        selected_daerah = st.selectbox("📍 Pilih Daerah:", ["Pilih daerah"] + daerah_cols)
         if selected_daerah == "Pilih daerah":
-            st.info("Silakan pilih daerah untuk melihat distribusi frekuensi.")
+            st.info("Pilih daerah untuk melihat distribusi frekuensi.")
         else:
-            st.write(f"### Distribusi Frekuensi: **{selected_daerah.capitalize()}**")
-
+            st.subheader(f"Distribusi Frekuensi: {selected_daerah.capitalize()}")
             data = df[selected_daerah].dropna()
             n = len(data)
             x_min, x_max = data.min(), data.max()
@@ -130,29 +127,16 @@ elif menu == "Frekuensi & Interval":
             if abs(selisih) > 0:
                 idx_max = prob_rounded.idxmax()
                 prob_rounded.iloc[idx_max] += selisih
-                prob_rounded = prob_rounded.round(2)
 
             freq_table["Probabilitas"] = prob_rounded
             freq_table["Prob. Kumulatif"] = freq_table["Probabilitas"].cumsum().round(2)
 
             upper_bounds = (freq_table["Prob. Kumulatif"] * 100).astype(int)
             lower_bounds = [1] + [ub + 1 for ub in upper_bounds[:-1]]
-            freq_table["Interval Angka Acak"] = [
-                f"{lb} - {ub}" for lb, ub in zip(lower_bounds, upper_bounds)
-            ]
-
-            freq_table = freq_table[[
-                "No", "Interval Jumlah", "Frekuensi", "Probabilitas", "Prob. Kumulatif", "Interval Angka Acak"
-            ]]
+            freq_table["Interval Angka Acak"] = [f"{lb}-{ub}" for lb, ub in zip(lower_bounds, upper_bounds)]
 
             st.dataframe(freq_table, use_container_width=True)
-
-            st.markdown("#### ℹ️ Info:")
-            st.write(f"Jumlah Data (n): {n}")
-            st.write(f"x_min: {x_min}, x_max: {x_max}")
-            st.write(f"Jangkauan (R): {R}")
-            st.write(f"Jumlah Kelas (k): {k}")
-            st.write(f"Panjang Kelas (h): {h}")
+            st.markdown(f"Jumlah Data: {n}, R: {R}, k: {k}, h: {h}")
     else:
         st.warning("⚠ Data tidak tersedia.")
 
@@ -160,8 +144,7 @@ elif menu == "Frekuensi & Interval":
 # 🟨 HALAMAN: RNG LCG
 # ========================
 elif menu == "RNG LCG":
-    st.subheader("🔢 Linear Congruential Generator (LCG)")
-
+    st.title("🔢 Linear Congruential Generator (LCG)")
     m = st.number_input("Modulus (m)", min_value=1, value=100, step=1)
     a = st.number_input("Multiplier (a)", min_value=1, value=5, step=1)
     c = st.number_input("Increment (c)", min_value=0, value=1, step=1)
@@ -180,5 +163,15 @@ elif menu == "RNG LCG":
             "X_i": rng_values,
             "R_i = X_i/m": [round(val / m, 4) for val in rng_values]
         })
-
         st.dataframe(rng_df, use_container_width=True)
+
+# ================================
+# 🟧 HALAMAN: SIMULASI MONTE CARLO
+# ================================
+elif menu == "Simulasi Monte Carlo":
+    st.title("🎲 Simulasi Monte Carlo")
+    n_simulasi = st.number_input("Jumlah Simulasi", min_value=1, value=10, step=1)
+    if st.button("Mulai Simulasi"):
+        hasil = [random.randint(1, 100) for _ in range(n_simulasi)]
+        sim_df = pd.DataFrame({"Percobaan": range(1, n_simulasi + 1), "Angka Acak": hasil})
+        st.dataframe(sim_df, use_container_width=True)
