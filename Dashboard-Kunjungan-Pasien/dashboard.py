@@ -30,19 +30,19 @@ def load_data():
         except Exception as e:
             st.error(f"❌ Gagal membaca Excel: {e}")
             return pd.DataFrame()
-    elif os.path.exists(csv_path):
+    elif os.path.exists(excel_path):
         try:
-            return pd.read_csv(csv_path)
+            return pd.read_excel(excel_path)
         except Exception as e:
-            st.error(f"❌ Gagal membaca CSV: {e}")
+            st.error(f"❌ Gagal membaca excel: {e}")
             return pd.DataFrame()
     else:
-        st.warning("⚠ Dataset tidak ditemukan. Upload file CSV/Excel.")
-        uploaded_file = st.file_uploader("Upload file CSV/Excel", type=["csv", "xlsx"])
+        st.warning("⚠ Dataset tidak ditemukan. Upload file excel/Excel.")
+        uploaded_file = st.file_uploader("Upload file excel/Excel", type=["excel", "xlsx"])
         if uploaded_file:
             try:
-                if uploaded_file.name.endswith(".csv"):
-                    return pd.read_csv(uploaded_file)
+                if uploaded_file.name.endswith(".excel"):
+                    return pd.read_excel(uploaded_file)
                 else:
                     return pd.read_excel(uploaded_file)
             except Exception as e:
