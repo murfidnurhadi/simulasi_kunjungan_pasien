@@ -21,7 +21,7 @@ menu = st.sidebar.radio("Pilih Halaman:", [
 # ========================
 # Path File Excel
 # ========================
-excel_path = "Tubes_Mosi.xlsx"  # Pastikan file ini ada di repo GitHub kamu
+excel_path = "dataset/dataset.xlsx"  # Pastikan file ini ada di repo GitHub kamu
 
 @st.cache_data
 def load_excel(sheet_name="DataTrain"):
