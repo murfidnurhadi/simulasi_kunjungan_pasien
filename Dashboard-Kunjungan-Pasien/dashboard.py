@@ -2,34 +2,22 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import math
-import plotly.express as px
 import os
-import random
+import plotly.express as px
 
 # ========================
-# 🔧 Konfigurasi Halaman
+# Konfigurasi Halaman
 # ========================
-logo_path = "images/unikom.png"
-if os.path.exists(logo_path):
-    st.set_page_config(page_title="Dashboard Simulasi Monte Carlo", layout="wide", page_icon=logo_path)
-else:
-    st.set_page_config(page_title="Dashboard Simulasi Monte Carlo", layout="wide", page_icon="📊")
+st.set_page_config(layout="wide", page_title="Dashboard Kelompok 6", page_icon="📊")
+
+st.sidebar.title("📂 Menu Navigasi")
+menu = st.sidebar.radio(
+    "Pilih Halaman:",
+    ("Dashboard", "Data Train", "Frekuensi & Interval", "RNG LCG", "Simulasi Monte Carlo")
+)
 
 # ========================
-# Sidebar Logo & Menu
-# ========================
-if os.path.exists(logo_path):
-    st.sidebar.image(logo_path, use_container_width=True)
-else:
-    st.sidebar.markdown("### 📊 Dashboard Kelompok 6")
-
-st.sidebar.header("📌 Menu Navigasi")
-menu = st.sidebar.radio("Pilih Halaman:", [
-    "Dashboard", "Data Train", "Frekuensi & Interval", "RNG LCG", "Simulasi Monte Carlo"
-])
-
-# ========================
-# Path File Dataset
+# Path File Dataset (Aman di Cloud)
 # ========================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 excel_path = os.path.join(BASE_DIR, "dataset", "dataset.xlsx")
@@ -50,8 +38,8 @@ def load_data():
             st.error(f"❌ Gagal membaca CSV: {e}")
             return pd.DataFrame()
     else:
-        st.warning("⚠ Dataset tidak ditemukan. Silakan upload file.")
-        uploaded_file = st.file_uploader("Upload file CSV atau Excel", type=["csv", "xlsx"])
+        st.warning("⚠ Dataset tidak ditemukan. Upload file CSV/Excel.")
+        uploaded_file = st.file_uploader("Upload file CSV/Excel", type=["csv", "xlsx"])
         if uploaded_file:
             try:
                 if uploaded_file.name.endswith(".csv"):
@@ -66,32 +54,64 @@ def load_data():
 df = load_data()
 
 # ========================
+# Fungsi bantu: Distribusi Frekuensi
+# ========================
+def hitung_frekuensi(data):
+    n = len(data)
+    x_min, x_max = int(data.min()), int(data.max())
+    R = x_max - x_min
+    k = math.ceil(1 + 3.3 * math.log10(n))
+    h = math.ceil(R / k)
+
+    bins = range(x_min, x_max + h, h)
+    labels = [f"{bins[i]} - {bins[i+1]-1}" for i in range(len(bins)-1)]
+    
+    if pd.cut([x_max], bins=bins, right=False).isnull().all() and len(labels) > 0:
+        last_low = int(labels[-1].split(' - ')[0])
+        labels[-1] = f"{last_low} - {x_max}"
+
+    freq_table = pd.cut(data, bins=bins, labels=labels, right=False, include_lowest=True).value_counts().sort_index().reset_index()
+    freq_table.columns = ["Interval Jumlah", "Frekuensi"]
+    
+    freq_table["No"] = range(1, len(freq_table) + 1)
+    total = freq_table["Frekuensi"].sum()
+    prob_raw = freq_table["Frekuensi"] / total
+    prob_rounded = prob_raw.round(2)
+    selisih = 1.00 - prob_rounded.sum()
+    if selisih != 0:
+        diff_indices = (prob_raw - prob_rounded).nlargest(int(abs(selisih) * 100)).index
+        prob_rounded.loc[diff_indices] += 0.01 * np.sign(selisih)
+
+    freq_table["Probabilitas"] = prob_rounded
+    freq_table["Prob. Kumulatif"] = freq_table["Probabilitas"].cumsum().round(2)
+
+    upper_bounds = (freq_table["Prob. Kumulatif"] * 100).astype(int)
+    lower_bounds = [1] + [ub + 1 for ub in upper_bounds[:-1]]
+    freq_table["Interval Angka Acak"] = [f"{lb}-{ub}" for lb, ub in zip(lower_bounds, upper_bounds)]
+    
+    return freq_table, n, R, k, h
+
+# ========================
 # 🟥 HALAMAN: DASHBOARD
 # ========================
 if menu == "Dashboard":
-    st.title("📊 Dashboard Simulasi Monte Carlo - Kelompok 6")
+    st.title("📊 Dashboard Simulasi Monte Carlo")
     if not df.empty:
-        # Normalisasi nama kolom
         df.columns = df.columns.str.strip().str.lower()
         exclude_cols = ["id", "bulan", "tahun"]
         daerah_cols = [col for col in df.columns if col not in exclude_cols]
 
-        # Hitung total
         total_per_wilayah = df[daerah_cols].sum().sort_values(ascending=False)
         total_seluruh = total_per_wilayah.sum()
         wilayah_terbanyak = total_per_wilayah.idxmax()
-        nilai_terbanyak = total_per_wilayah.max()
         wilayah_tersedikit = total_per_wilayah.idxmin()
-        nilai_tersedikit = total_per_wilayah.min()
 
-        # Tampilkan informasi
-        st.markdown(f"**Total seluruh pengunjung:** {total_seluruh}")
-        st.markdown(f"**Wilayah terbanyak:** {wilayah_terbanyak.capitalize()} ({nilai_terbanyak})")
-        st.markdown(f"**Wilayah tersedikit:** {wilayah_tersedikit.capitalize()} ({nilai_tersedikit})")
+        st.subheader("Ringkasan Data")
+        st.markdown(f"- Total seluruh pengunjung: **{total_seluruh}**")
+        st.markdown(f"- Wilayah terbanyak: **{wilayah_terbanyak}** ({total_per_wilayah.max()})")
+        st.markdown(f"- Wilayah tersedikit: **{wilayah_tersedikit}** ({total_per_wilayah.min()})")
 
-        # Grafik
         fig = px.bar(total_per_wilayah, x=total_per_wilayah.index, y=total_per_wilayah.values,
-                     labels={'x': 'Wilayah', 'y': 'Total Pengunjung'},
                      title="Total Pengunjung per Wilayah", text=total_per_wilayah.values)
         fig.update_traces(textposition='outside')
         st.plotly_chart(fig, use_container_width=True)
@@ -104,65 +124,27 @@ if menu == "Dashboard":
 elif menu == "Data Train":
     st.title("📋 Data Train Pengunjung")
     if not df.empty:
-        st.dataframe(df, use_container_width=True)
+        st.dataframe(df.reset_index(drop=True), use_container_width=True)
     else:
         st.warning("⚠ Data tidak tersedia.")
 
-# ================================
+# ========================
 # 🟩 HALAMAN: FREKUENSI & INTERVAL
-# ================================
+# ========================
 elif menu == "Frekuensi & Interval":
-    st.title("📈 Distribusi Frekuensi per Daerah")
+    st.title("📈 Distribusi Frekuensi")
     if not df.empty:
         df.columns = df.columns.str.strip().str.lower()
         exclude_cols = ["id", "bulan", "tahun"]
         daerah_cols = [col for col in df.columns if col not in exclude_cols]
 
-        selected_daerah = st.selectbox("📍 Pilih Daerah:", ["Pilih daerah"] + daerah_cols)
-        if selected_daerah == "Pilih daerah":
-            st.info("Pilih daerah untuk melihat distribusi frekuensi.")
-        else:
-            st.subheader(f"Distribusi Frekuensi: {selected_daerah.capitalize()}")
-            data = df[selected_daerah].dropna()
-            n = len(data)
-            x_min, x_max = data.min(), data.max()
-            R = x_max - x_min
-            k = math.ceil(1 + 3.3 * math.log10(n))
-            h = math.ceil(R / k)
-
-            lower = math.floor(x_min)
-            bins = []
-            for _ in range(k):
-                upper = lower + h
-                bins.append((lower, upper))
-                lower = upper + 1
-
-            labels = [f"{low} - {high}" for low, high in bins]
-            cut_bins = [b[0] for b in bins] + [bins[-1][1]]
-
-            kelas = pd.cut(data, bins=cut_bins, labels=labels, include_lowest=True, right=True)
-            freq_table = kelas.value_counts().sort_index().reset_index()
-            freq_table.columns = ["Interval Jumlah", "Frekuensi"]
-            freq_table = freq_table[freq_table["Frekuensi"] > 0].reset_index(drop=True)
-
-            freq_table["No"] = range(1, len(freq_table) + 1)
-            total = freq_table["Frekuensi"].sum()
-            prob_raw = freq_table["Frekuensi"] / total
-            prob_rounded = prob_raw.round(2)
-            selisih = 1.00 - prob_rounded.sum()
-            if abs(selisih) > 0:
-                idx_max = prob_rounded.idxmax()
-                prob_rounded.iloc[idx_max] += selisih
-
-            freq_table["Probabilitas"] = prob_rounded
-            freq_table["Prob. Kumulatif"] = freq_table["Probabilitas"].cumsum().round(2)
-
-            upper_bounds = (freq_table["Prob. Kumulatif"] * 100).astype(int)
-            lower_bounds = [1] + [ub + 1 for ub in upper_bounds[:-1]]
-            freq_table["Interval Angka Acak"] = [f"{lb}-{ub}" for lb, ub in zip(lower_bounds, upper_bounds)]
-
+        selected_daerah = st.selectbox("Pilih Daerah:", ["pilih daerah"] + daerah_cols)
+        if selected_daerah != "pilih daerah":
+            freq_table, n, R, k, h = hitung_frekuensi(df[selected_daerah].dropna())
             st.dataframe(freq_table, use_container_width=True)
-            st.markdown(f"Jumlah Data: {n}, R: {R}, k: {k}, h: {h}")
+            st.markdown(f"n: {n}, R: {R}, k: {k}, h: {h}")
+        else:
+            st.info("Pilih daerah untuk menampilkan tabel distribusi.")
     else:
         st.warning("⚠ Data tidak tersedia.")
 
@@ -189,15 +171,47 @@ elif menu == "RNG LCG":
             "X_i": rng_values,
             "R_i = X_i/m": [round(val / m, 4) for val in rng_values]
         })
+        st.session_state['rng_df'] = rng_df
         st.dataframe(rng_df, use_container_width=True)
+        st.success("Bilangan acak berhasil dibuat!")
 
 # ================================
 # 🟧 HALAMAN: SIMULASI MONTE CARLO
 # ================================
 elif menu == "Simulasi Monte Carlo":
     st.title("🎲 Simulasi Monte Carlo")
-    n_simulasi = st.number_input("Jumlah Simulasi", min_value=1, value=10, step=1)
-    if st.button("Mulai Simulasi"):
-        hasil = [random.randint(1, 100) for _ in range(n_simulasi)]
-        sim_df = pd.DataFrame({"Percobaan": range(1, n_simulasi + 1), "Angka Acak": hasil})
-        st.dataframe(sim_df, use_container_width=True)
+    if 'rng_df' not in st.session_state:
+        st.warning("Generate bilangan acak dulu di menu RNG LCG.")
+    else:
+        rng_df = st.session_state['rng_df']
+        st.subheader("Bilangan Acak:")
+        st.dataframe(rng_df, use_container_width=True)
+
+        if not df.empty:
+            df.columns = df.columns.str.strip().str.lower()
+            exclude_cols = ["id", "bulan", "tahun"]
+            daerah_cols = [col for col in df.columns if col not in exclude_cols]
+            selected_daerah = st.selectbox("Pilih Daerah untuk Simulasi:", ["pilih daerah"] + daerah_cols)
+
+            if selected_daerah != "pilih daerah":
+                freq_table, _, _, _, _ = hitung_frekuensi(df[selected_daerah].dropna())
+
+                def get_interval(rand, freq_table):
+                    angka_acak = int(rand * 100)
+                    if angka_acak == 0: angka_acak = 1
+                    for _, row in freq_table.iterrows():
+                        low, high = map(int, row["Interval Angka Acak"].split('-'))
+                        if low <= angka_acak <= high:
+                            return row["Interval Jumlah"]
+                    return "-"
+
+                sim_results = []
+                for _, row in rng_df.iterrows():
+                    sim_results.append({
+                        "Percobaan": row["i"],
+                        "Bilangan Acak": row["R_i = X_i/m"],
+                        "Jumlah Pengunjung (Simulasi)": get_interval(row["R_i = X_i/m"], freq_table)
+                    })
+
+                st.subheader("Hasil Simulasi")
+                st.dataframe(pd.DataFrame(sim_results), use_container_width=True)
