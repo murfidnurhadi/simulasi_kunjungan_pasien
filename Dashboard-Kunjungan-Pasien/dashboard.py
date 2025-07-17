@@ -29,24 +29,31 @@ menu = st.sidebar.radio("Pilih Halaman:", [
 ])
 
 # ========================
-# Path File Excel
+# Path File Dataset
 # ========================
-excel_path = "dataset.xlsx"
 excel_path = "dataset/dataset.xlsx"
+csv_path = "dataset/DataTrain.csv"
 
 @st.cache_data
-def load_excel(sheet_name="DataTrain"):
-    if not os.path.exists(excel_path):
-        st.error(f"❌ File {excel_path} tidak ditemukan di repo. Pastikan file ada di folder dataset.")
-        return pd.DataFrame()
-    try:
-        return pd.read_excel(excel_path, sheet_name=sheet_name)
-    except Exception as e:
-        st.error(f"❌ Gagal membaca file: {e}")
+def load_data():
+    if os.path.exists(excel_path):
+        try:
+            return pd.read_excel(excel_path, sheet_name="DataTrain")
+        except Exception as e:
+            st.error(f"❌ Gagal membaca Excel: {e}")
+            return pd.DataFrame()
+    elif os.path.exists(csv_path):
+        try:
+            return pd.read_csv(csv_path)
+        except Exception as e:
+            st.error(f"❌ Gagal membaca CSV: {e}")
+            return pd.DataFrame()
+    else:
+        st.error("❌ File dataset tidak ditemukan. Pastikan file ada di folder dataset.")
         return pd.DataFrame()
 
 # Load Data
-df = load_excel("DataTrain")
+df = load_data()
 
 # ========================
 # 🟥 HALAMAN: DASHBOARD
@@ -54,10 +61,12 @@ df = load_excel("DataTrain")
 if menu == "Dashboard":
     st.title("📊 Dashboard Simulasi Monte Carlo - Kelompok 6")
     if not df.empty:
+        # Normalisasi nama kolom
         df.columns = df.columns.str.strip().str.lower()
         exclude_cols = ["id", "bulan", "tahun"]
         daerah_cols = [col for col in df.columns if col not in exclude_cols]
 
+        # Hitung total
         total_per_wilayah = df[daerah_cols].sum().sort_values(ascending=False)
         total_seluruh = total_per_wilayah.sum()
         wilayah_terbanyak = total_per_wilayah.idxmax()
@@ -65,10 +74,12 @@ if menu == "Dashboard":
         wilayah_tersedikit = total_per_wilayah.idxmin()
         nilai_tersedikit = total_per_wilayah.min()
 
+        # Tampilkan informasi
         st.markdown(f"**Total seluruh pengunjung:** {total_seluruh}")
         st.markdown(f"**Wilayah terbanyak:** {wilayah_terbanyak.capitalize()} ({nilai_terbanyak})")
         st.markdown(f"**Wilayah tersedikit:** {wilayah_tersedikit.capitalize()} ({nilai_tersedikit})")
 
+        # Grafik
         fig = px.bar(total_per_wilayah, x=total_per_wilayah.index, y=total_per_wilayah.values,
                      labels={'x': 'Wilayah', 'y': 'Total Pengunjung'},
                      title="Total Pengunjung per Wilayah", text=total_per_wilayah.values)
