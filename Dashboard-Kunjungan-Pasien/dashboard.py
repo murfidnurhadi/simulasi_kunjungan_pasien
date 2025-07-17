@@ -18,7 +18,11 @@ else:
 # ========================
 # Sidebar Logo & Menu
 # ========================
-st.sidebar.image(logo_path, use_container_width=True)
+if os.path.exists(logo_path):
+    st.sidebar.image(logo_path, use_container_width=True)
+else:
+    st.sidebar.markdown("### 📊 Dashboard Kelompok 6")
+
 st.sidebar.header("📌 Menu Navigasi")
 menu = st.sidebar.radio("Pilih Halaman:", [
     "Dashboard", "Data Train", "Frekuensi & Interval", "RNG LCG", "Simulasi Monte Carlo"
