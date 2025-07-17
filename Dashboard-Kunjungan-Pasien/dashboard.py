@@ -1,46 +1,80 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-import math
+import gdown
 import os
 import plotly.express as px
-import gdown
 
 # -----------------------
-# KONFIGURASI HALAMAN
+# Konfigurasi Halaman
 # -----------------------
-st.set_page_config(page_title="Dashboard Simulasi Monte Carlo", layout="wide", page_icon="📄")
-st.title("📊 Dashboard Simulasi Monte Carlo & Distribusi")
+st.set_page_config(page_title="Dashboard Simulasi Monte Carlo", layout="wide")
+st.title("📊 Dashboard Simulasi Monte Carlo")
 
 # -----------------------
-# SIDEBAR NAVIGASI
+# Sidebar Navigasi
 # -----------------------
 st.sidebar.header("📌 Menu Navigasi")
-menu = st.sidebar.radio("Pilih Halaman:", [
+menu = st.sidebar.selectbox("Pilih Dataset:", [
     "Data Kunjungan Pasien",
     "Data Train",
-    "Frekuensi dan Interval",
+    "Kota Cirebon",
+    "Kab Cirebon",
+    "Kuningan",
+    "Indramayu",
+    "Majalengka",
+    "Lain2",
     "RNG LCG",
     "Simulasi"
 ])
 
-source_option = st.sidebar.radio("Ambil Data Dari:", ["Lokal", "Google Drive"])
+source_option = st.sidebar.radio("Ambil data dari:", ["Otomatis (Lokal/Drive)", "Upload Manual"])
 
 # -----------------------
-# PATH LOKAL
+# Data Sources Lengkap
 # -----------------------
-excel_path = "dataset/dataset.xlsx"
-csv_kunjungan = "Data_Kunjungan_Pasien.csv"
-csv_datatrain = "DataTrain.csv"
-
-# -----------------------
-# LINK GOOGLE DRIVE
-# -----------------------
-gdrive_links = {
-    "Data Kunjungan Pasien": "https://drive.google.com/file/d/1ZHKsj50sICmlYDrDVhVo9u1871pIXiLm/view?usp=sharing",
-    "Data Train": "https://drive.google.com/file/d/1ty1Ob9NBbpOt3cT7Mw2s78tjwjZw_9da/view?usp=sharing"
+data_sources = {
+    "Data Kunjungan Pasien": [
+        {"file": "Data_Kunjungan_Pasien.csv", "gdrive": "https://drive.google.com/file/d/1GUHcM1xVSjU4aEIuH2QmRYFGYo0cCDEH/view?usp=sharing"}
+    ],
+    "Data Train": [
+        {"file": "DataTrain.csv", "gdrive": "https://drive.google.com/file/d/11tgNQ2GqMSIM97DH2U9HNTbIh4CceuiF/view?usp=sharing"}
+    ],
+    "Kota Cirebon": [
+        {"file": "DataTrainKotaCirebon.csv", "gdrive": "https://drive.google.com/file/d/1ptLOuscYMjzGw_v6qOI_Gvmc6t-kW9OS/view?usp=sharing"},
+        {"file": "DataIntervalKotaCirebon.csv", "gdrive": "https://drive.google.com/file/d/1jbyntLDGUegAL-9n-uJWwVsH-V1UrxDp/view?usp=sharing"}
+    ],
+    "Kab Cirebon": [
+        {"file": "DataTrainKabCirebon.csv", "gdrive": "https://drive.google.com/file/d/12-5l_9EFB_VRARq6CIOMTlaWH2VOx9wO/view?usp=sharing"},
+        {"file": "DataIntervalKabCirebon.csv", "gdrive": "https://drive.google.com/file/d/1uM_5BcU1Zbl998W4yE5XsDcfiyj_itdC/view?usp=sharing"}
+    ],
+    "Kuningan": [
+        {"file": "DataTrainKuningan.csv", "gdrive": "https://drive.google.com/file/d/113p_LARFjkQthew9S3t0dXdBq4sqME9H/view?usp=sharing"},
+        {"file": "DataIntervalKuningan.csv", "gdrive": "https://drive.google.com/file/d/1yYhh5m3YIkLaCNP6hERswTAQ8pv6kyfW/view?usp=sharing"}
+    ],
+    "Indramayu": [
+        {"file": "DataTrainIndramayu.csv", "gdrive": "https://drive.google.com/file/d/118Hl_6dvhYUgeE6tQG-aG_Amq1OneWlL/view?usp=sharing"},
+        {"file": "DataIntervalIndramayu.csv", "gdrive": "https://drive.google.com/file/d/1n94Wtw5RYS1zwABz0xosM4N1JMob1rXW/view?usp=sharing"}
+    ],
+    "Majalengka": [
+        {"file": "DataTrainMajalengka.csv", "gdrive": "https://drive.google.com/file/d/12-5l_9EFB_VRARq6CIOMTlaWH2VOx9wO/view?usp=sharing"},
+        {"file": "DataIntervalMajalengka.csv", "gdrive": "https://drive.google.com/file/d/1QydFBUgwsrsV1kz9djJ06oz0KfHBZpIw/view?usp=sharing"}
+    ],
+    "Lain2": [
+        {"file": "DataTrainLain2.csv", "gdrive": "https://drive.google.com/file/d/1BuDy0YlPazm7eoCabXHUq-BzsiKVDG67/view?usp=sharing"},
+        {"file": "DataIntervalLain2.csv", "gdrive": "https://drive.google.com/file/d/1VinCHBclblPMivT_Xndg6-DAjC3wf9_w/view?usp=sharing"}
+    ],
+    "RNG LCG": [
+        {"file": "RNG.csv", "gdrive": "https://drive.google.com/file/d/1fBZgfx9rYpBv29trUKkR1h9KT36g7udD/view?usp=sharing"},
+        {"file": "LCG.csv", "gdrive": "https://drive.google.com/file/d/1MJMALE9054J2F6c1w-HYNRe9sftk2JGP/view?usp=sharing"}
+    ],
+    "Simulasi": [
+        {"file": "Simulasi_Monte_Carlo.csv", "gdrive": "https://drive.google.com/file/d/1sbZlQXUjU7Km5pQrCcM4e1gmOL0mAzzX/view?usp=sharing"}
+    ]
 }
 
+# -----------------------
+# Fungsi Konversi Link
+# -----------------------
 def convert_gdrive_link(link):
     if "/d/" in link:
         file_id = link.split("/d/")[1].split("/")[0]
@@ -48,149 +82,125 @@ def convert_gdrive_link(link):
     return link
 
 # -----------------------
-# FUNGSI LOAD DATA
+# Fungsi Load Data dengan Fallback Encoding
 # -----------------------
 @st.cache_data
-def load_excel(sheet_name):
+def load_data(local_path, gdrive_url):
     try:
-        return pd.read_excel(excel_path, sheet_name=sheet_name)
+        if not os.path.exists(local_path):
+            st.info(f"📥 Mengunduh {os.path.basename(local_path)} dari Google Drive...")
+            gdown.download(convert_gdrive_link(gdrive_url), local_path, quiet=False)
+
+        try:
+            df = pd.read_csv(local_path, low_memory=False)
+        except UnicodeDecodeError:
+            df = pd.read_csv(local_path, encoding="ISO-8859-1", low_memory=False)
+
+        if df.shape[1] == 1:  # delimiter salah
+            try:
+                df = pd.read_csv(local_path, delimiter=";", encoding="utf-8", low_memory=False)
+            except UnicodeDecodeError:
+                df = pd.read_csv(local_path, delimiter=";", encoding="ISO-8859-1", low_memory=False)
+
+        return df
     except Exception as e:
-        st.error(f"Gagal load sheet {sheet_name}: {e}")
+        st.error(f"Gagal memuat data: {e}")
         return pd.DataFrame()
 
-@st.cache_data
-def load_csv(path):
-    try:
-        return pd.read_csv(path)
-    except:
-        return pd.DataFrame()
+# -----------------------
+# Upload Manual
+# -----------------------
+uploaded_file = None
+if source_option == "Upload Manual":
+    uploaded_file = st.file_uploader("Unggah file CSV", type=["csv"])
 
-@st.cache_data
-def load_csv_gdrive(link, local_name):
-    try:
-        url = convert_gdrive_link(link)
-        output = local_name
-        if not os.path.exists(output):
-            gdown.download(url, output, quiet=False)
-        return pd.read_csv(output)
-    except Exception as e:
-        st.error(f"Gagal ambil dari Google Drive: {e}")
-        return pd.DataFrame()
+# -----------------------
+# Tampilkan Dataset
+# -----------------------
+datasets = data_sources.get(menu, [])
+if not datasets:
+    st.warning("⚠ Dataset belum tersedia.")
+else:
+    for idx, info in enumerate(datasets):
+        st.subheader(f"📄 Dataset {idx+1} - {os.path.basename(info['file'])}")
+        file_path = os.path.join(os.getcwd(), info["file"])
 
-def tampilkan_tabel(df, filename):
-    if not df.empty:
-        st.dataframe(df, use_container_width=True)
-        csv = df.to_csv(index=False).encode("utf-8")
-        st.download_button("📥 Download CSV", csv, file_name=filename, mime="text/csv")
-    else:
-        st.warning("⚠ Data tidak tersedia.")
+        # Load data
+        if source_option == "Otomatis (Lokal/Drive)":
+            df = load_data(file_path, info["gdrive"])
+        elif uploaded_file:
+            try:
+                df = pd.read_csv(uploaded_file, encoding="utf-8", low_memory=False)
+            except UnicodeDecodeError:
+                df = pd.read_csv(uploaded_file, encoding="ISO-8859-1", low_memory=False)
+        else:
+            df = pd.DataFrame()
 
-# ========================
-# ✅ DATA KUNJUNGAN PASIEN
-# ========================
-if menu == "Data Kunjungan Pasien":
-    st.subheader("📋 Data Kunjungan Pasien")
-    if source_option == "Lokal":
-        df = load_csv(csv_kunjungan)
-    else:
-        df = load_csv_gdrive(gdrive_links["Data Kunjungan Pasien"], "Data_Kunjungan_Pasien.csv")
-    tampilkan_tabel(df, "Data_Kunjungan_Pasien.csv")
-
-# ========================
-# ✅ DATA TRAIN
-# ========================
-elif menu == "Data Train":
-    st.subheader("📊 Data Train")
-    if source_option == "Lokal":
-        df = load_excel("DataTrain")
+        # Jika kosong
         if df.empty:
-            df = load_csv(csv_datatrain)
-    else:
-        df = load_csv_gdrive(gdrive_links["Data Train"], "DataTrain.csv")
+            st.warning("⚠ Tidak ada data untuk ditampilkan.")
+            continue
 
-    if not df.empty:
-        tampilkan_tabel(df, "DataTrain.csv")
+        # ✅ Tampilkan Data
+        st.dataframe(df, use_container_width=True)
+        st.markdown(f"**Jumlah Data:** {len(df)} baris")
 
+        # ✅ Jika Data Kunjungan Pasien → TIDAK ada filter & grafik
+        if "Data_Kunjungan_Pasien.csv" in info["file"]:
+            csv = df.to_csv(index=False).encode('utf-8')
+            st.download_button(
+                label="📥 Download Data (CSV)",
+                data=csv,
+                file_name=f"{info['file']}",
+                mime="text/csv",
+                key=f"download_{idx}"
+            )
+            continue
+
+        # ✅ Filter Dinamis
         with st.expander("🔍 Filter Data"):
             df_filtered = df.copy()
             for col in df.columns:
                 if df[col].dtype == "object":
-                    opt = st.multiselect(f"Filter {col}", df[col].dropna().unique())
-                    if opt:
-                        df_filtered = df_filtered[df_filtered[col].isin(opt)]
+                    options = st.multiselect(f"Filter {col}", df[col].dropna().unique(), key=f"filter_{col}_{idx}")
+                    if options:
+                        df_filtered = df_filtered[df_filtered[col].isin(options)]
+                else:
+                    try:
+                        min_val = float(df[col].min())
+                        max_val = float(df[col].max())
+                        if min_val != max_val:
+                            min_slider, max_slider = st.slider(f"Rentang {col}", min_val, max_val, (min_val, max_val), key=f"slider_{col}_{idx}")
+                            df_filtered = df_filtered[(df_filtered[col] >= min_slider) & (df_filtered[col] <= max_slider)]
+                    except:
+                        pass
+
             st.dataframe(df_filtered)
 
-        if len(df.columns) >= 2:
-            st.subheader("📈 Visualisasi")
-            chart = st.radio("Jenis Grafik", ["Bar", "Line", "Pie"], horizontal=True)
-            col_x = st.selectbox("Kolom X", df.columns)
-            col_y = st.selectbox("Kolom Y", df.columns)
+        # ✅ Visualisasi
+        if len(df_filtered.columns) >= 2:
+            st.subheader("📊 Visualisasi Data")
+            chart_type = st.radio("Pilih Grafik", ["Bar", "Line", "Pie"], horizontal=True, key=f"chart_{idx}")
+            col_x = st.selectbox("Kolom X", df_filtered.columns, key=f"x_{idx}")
+            col_y = st.selectbox("Kolom Y", df_filtered.columns, key=f"y_{idx}")
+
             try:
-                if chart == "Bar":
-                    fig = px.bar(df, x=col_x, y=col_y)
-                elif chart == "Line":
-                    fig = px.line(df, x=col_x, y=col_y)
+                if chart_type == "Bar":
+                    fig = px.bar(df_filtered, x=col_x, y=col_y, title="Bar Chart")
+                elif chart_type == "Line":
+                    fig = px.line(df_filtered, x=col_x, y=col_y, title="Line Chart")
                 else:
-                    fig = px.pie(df, names=col_x, values=col_y)
+                    fig = px.pie(df_filtered, names=col_x, values=col_y, title="Pie Chart")
                 st.plotly_chart(fig, use_container_width=True)
             except:
-                st.warning("Kolom Y harus numerik untuk Bar/Line.")
+                st.warning("⚠ Tidak bisa membuat grafik. Pastikan kolom numerik untuk Y.")
 
-# ========================
-# ✅ FREKUENSI DAN INTERVAL
-# ========================
-elif menu == "Frekuensi dan Interval":
-    st.subheader("📈 Distribusi Frekuensi dan Interval")
-    df = load_excel("DataTrain")
-    if not df.empty:
-        df.columns = df.columns.str.strip().str.lower()
-        exclude = ["id", "bulan", "tahun"]
-        daerah_cols = [c for c in df.columns if c not in exclude]
-
-        pilih = st.selectbox("📍 Pilih Daerah:", ["Pilih"] + daerah_cols)
-        if pilih != "Pilih":
-            data = df[pilih].dropna()
-            n = len(data)
-            x_min, x_max = data.min(), data.max()
-            R = x_max - x_min
-            k = math.ceil(1 + 3.3 * math.log10(n))
-            h = math.ceil(R / k)
-
-            lower = math.floor(x_min)
-            bins = []
-            for _ in range(k):
-                upper = lower + h
-                bins.append((lower, upper))
-                lower = upper + 1
-
-            labels = [f"{low}-{high}" for low, high in bins]
-            cut_bins = [b[0] for b in bins] + [bins[-1][1]]
-
-            kelas = pd.cut(data, bins=cut_bins, labels=labels, include_lowest=True)
-            freq_table = kelas.value_counts().sort_index().reset_index()
-            freq_table.columns = ["Interval", "Frekuensi"]
-            freq_table["No"] = range(1, len(freq_table)+1)
-            total = freq_table["Frekuensi"].sum()
-            prob = (freq_table["Frekuensi"]/total).round(2)
-            selisih = 1 - prob.sum()
-            if abs(selisih) > 0:
-                prob.iloc[prob.idxmax()] += selisih
-            freq_table["Probabilitas"] = prob
-            freq_table["Prob. Kumulatif"] = prob.cumsum().round(2)
-            upper_bounds = (freq_table["Prob. Kumulatif"] * 100).astype(int)
-            lower_bounds = [1] + [u+1 for u in upper_bounds[:-1]]
-            freq_table["Interval Angka Acak"] = [f"{lb}-{ub}" for lb, ub in zip(lower_bounds, upper_bounds)]
-            st.dataframe(freq_table, use_container_width=True)
-
-# ========================
-# ✅ RNG & SIMULASI
-# ========================
-elif menu == "RNG LCG":
-    st.subheader("🎲 RNG LCG")
-    df = load_excel("RNG_LCG")
-    tampilkan_tabel(df, "RNG_LCG.csv")
-
-elif menu == "Simulasi":
-    st.subheader("🧮 Simulasi Monte Carlo")
-    df = load_excel("Simulasi")
-    tampilkan_tabel(df, "Simulasi.csv")
+        # ✅ Download Button
+        csv = df_filtered.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label="📥 Download Data (CSV)",
+            data=csv,
+            file_name=f"filtered_data_{idx}.csv",
+            mime="text/csv",
+            key=f"download_{idx}"
+        )
