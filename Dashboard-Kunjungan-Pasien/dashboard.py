@@ -6,54 +6,66 @@ import os
 import plotly.express as px
 
 # ========================
-# Konfigurasi Halaman
+# 🎨 Konfigurasi Halaman
 # ========================
-st.set_page_config(layout="wide", page_title="Dashboard Kelompok 6", page_icon="📊")
-
-st.sidebar.title("📂 Menu Navigasi")
-menu = st.sidebar.radio(
-    "Pilih Halaman:",
-    ("Dashboard", "Data Train", "Frekuensi & Interval", "RNG LCG", "Simulasi Monte Carlo")
+st.set_page_config(
+    page_title="Simulasi Monte Carlo - Kelompok 6",
+    page_icon="🎲",
+    layout="wide"
 )
 
+# CSS Custom untuk UI lebih menarik
+st.markdown("""
+    <style>
+    .main { background-color: #f9f9f9; }
+    .block-container { padding-top: 1rem; }
+    h1, h2, h3, h4 { color: #333333; }
+    .sidebar .sidebar-content { background-color: #f0f2f6; }
+    .stButton>button {
+        background-color: #4CAF50; color: white; border-radius: 8px; padding: 10px;
+    }
+    .stButton>button:hover { background-color: #45a049; }
+    .stSelectbox, .stNumberInput { font-size: 16px; }
+    </style>
+""", unsafe_allow_html=True)
+
 # ========================
-# Path File Dataset (Aman di Cloud)
+# Sidebar Menu
+# ========================
+st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/a/a7/UNIKOM.png", use_container_width=True)
+st.sidebar.title("📂 Menu Navigasi")
+menu = st.sidebar.radio("Pilih Halaman:", [
+    "🏠 Dashboard", "📋 Data Train", "📈 Frekuensi & Interval", "🔢 RNG LCG", "🎲 Simulasi Monte Carlo"
+])
+
+# ========================
+# Path File Dataset
 # ========================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 excel_path = os.path.join(BASE_DIR, "dataset", "dataset.xlsx")
 
 @st.cache_data
-def load_data():
+def load_excel():
     if os.path.exists(excel_path):
         try:
             return pd.read_excel(excel_path, sheet_name="DataTrain")
         except Exception as e:
             st.error(f"❌ Gagal membaca Excel: {e}")
             return pd.DataFrame()
-    elif os.path.exists(excel_path):
-        try:
-            return pd.read_excel(excel_path)
-        except Exception as e:
-            st.error(f"❌ Gagal membaca excel: {e}")
-            return pd.DataFrame()
     else:
-        st.warning("⚠ Dataset tidak ditemukan. Upload file excel/Excel.")
-        uploaded_file = st.file_uploader("Upload file excel/Excel", type=["excel", "xlsx"])
+        st.warning("⚠ File Excel tidak ditemukan. Upload file .xlsx.")
+        uploaded_file = st.file_uploader("Upload file Excel (.xlsx)", type=["xlsx"])
         if uploaded_file:
             try:
-                if uploaded_file.name.endswith(".excel"):
-                    return pd.read_excel(uploaded_file)
-                else:
-                    return pd.read_excel(uploaded_file)
+                return pd.read_excel(uploaded_file, sheet_name="DataTrain")
             except Exception as e:
                 st.error(f"❌ Gagal membaca file upload: {e}")
         return pd.DataFrame()
 
-# Load Data
-df = load_data()
+df = load_excel()
 
 # ========================
-# Fungsi bantu: Distribusi Frekuensi
+# Fungsi bantu
 # ========================
 def hitung_frekuensi(data):
     n = len(data)
@@ -91,10 +103,12 @@ def hitung_frekuensi(data):
     return freq_table, n, R, k, h
 
 # ========================
-# 🟥 HALAMAN: DASHBOARD
+# 🟥 Dashboard
 # ========================
-if menu == "Dashboard":
+if menu == "🏠 Dashboard":
     st.title("📊 Dashboard Simulasi Monte Carlo")
+    st.write("Selamat datang! Gunakan menu di sidebar untuk navigasi.")
+
     if not df.empty:
         df.columns = df.columns.str.strip().str.lower()
         exclude_cols = ["id", "bulan", "tahun"]
@@ -102,35 +116,34 @@ if menu == "Dashboard":
 
         total_per_wilayah = df[daerah_cols].sum().sort_values(ascending=False)
         total_seluruh = total_per_wilayah.sum()
-        wilayah_terbanyak = total_per_wilayah.idxmax()
-        wilayah_tersedikit = total_per_wilayah.idxmin()
 
-        st.subheader("Ringkasan Data")
-        st.markdown(f"- Total seluruh pengunjung: **{total_seluruh}**")
-        st.markdown(f"- Wilayah terbanyak: **{wilayah_terbanyak}** ({total_per_wilayah.max()})")
-        st.markdown(f"- Wilayah tersedikit: **{wilayah_tersedikit}** ({total_per_wilayah.min()})")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Total Pengunjung", f"{total_seluruh}")
+        col2.metric("Wilayah Terbanyak", total_per_wilayah.idxmax(), f"{total_per_wilayah.max()}")
+        col3.metric("Wilayah Tersedikit", total_per_wilayah.idxmin(), f"{total_per_wilayah.min()}")
 
         fig = px.bar(total_per_wilayah, x=total_per_wilayah.index, y=total_per_wilayah.values,
-                     title="Total Pengunjung per Wilayah", text=total_per_wilayah.values)
+                     title="Total Pengunjung per Wilayah", text=total_per_wilayah.values,
+                     color=total_per_wilayah.values, color_continuous_scale="Blues")
         fig.update_traces(textposition='outside')
         st.plotly_chart(fig, use_container_width=True)
     else:
-        st.warning("⚠ Data tidak tersedia.")
+        st.info("Upload file Excel (.xlsx) untuk melihat data.")
 
 # ========================
-# 🟦 HALAMAN: DATA TRAIN
+# 🟦 Data Train
 # ========================
-elif menu == "Data Train":
+elif menu == "📋 Data Train":
     st.title("📋 Data Train Pengunjung")
     if not df.empty:
         st.dataframe(df.reset_index(drop=True), use_container_width=True)
     else:
-        st.warning("⚠ Data tidak tersedia.")
+        st.warning("Data tidak tersedia.")
 
 # ========================
-# 🟩 HALAMAN: FREKUENSI & INTERVAL
+# 🟩 Frekuensi & Interval
 # ========================
-elif menu == "Frekuensi & Interval":
+elif menu == "📈 Frekuensi & Interval":
     st.title("📈 Distribusi Frekuensi")
     if not df.empty:
         df.columns = df.columns.str.strip().str.lower()
@@ -141,16 +154,14 @@ elif menu == "Frekuensi & Interval":
         if selected_daerah != "pilih daerah":
             freq_table, n, R, k, h = hitung_frekuensi(df[selected_daerah].dropna())
             st.dataframe(freq_table, use_container_width=True)
-            st.markdown(f"n: {n}, R: {R}, k: {k}, h: {h}")
-        else:
-            st.info("Pilih daerah untuk menampilkan tabel distribusi.")
+            st.markdown(f"**Jumlah Data (n):** {n} | **R:** {R} | **k:** {k} | **h:** {h}")
     else:
-        st.warning("⚠ Data tidak tersedia.")
+        st.warning("Data tidak tersedia.")
 
 # ========================
-# 🟨 HALAMAN: RNG LCG
+# 🟨 RNG LCG
 # ========================
-elif menu == "RNG LCG":
+elif menu == "🔢 RNG LCG":
     st.title("🔢 Linear Congruential Generator (LCG)")
     m = st.number_input("Modulus (m)", min_value=1, value=100, step=1)
     a = st.number_input("Multiplier (a)", min_value=1, value=5, step=1)
@@ -174,10 +185,10 @@ elif menu == "RNG LCG":
         st.dataframe(rng_df, use_container_width=True)
         st.success("Bilangan acak berhasil dibuat!")
 
-# ================================
-# 🟧 HALAMAN: SIMULASI MONTE CARLO
-# ================================
-elif menu == "Simulasi Monte Carlo":
+# ========================
+# 🟧 Simulasi Monte Carlo
+# ========================
+elif menu == "🎲 Simulasi Monte Carlo":
     st.title("🎲 Simulasi Monte Carlo")
     if 'rng_df' not in st.session_state:
         st.warning("Generate bilangan acak dulu di menu RNG LCG.")
