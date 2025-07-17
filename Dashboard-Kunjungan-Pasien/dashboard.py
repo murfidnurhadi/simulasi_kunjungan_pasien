@@ -31,6 +31,7 @@ menu = st.sidebar.radio("Pilih Halaman:", [
 # ========================
 # Path File Excel
 # ========================
+excel_path = "dataset.xlsx"
 excel_path = "dataset/dataset.xlsx"
 
 @st.cache_data
