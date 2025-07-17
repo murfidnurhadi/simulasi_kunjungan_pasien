@@ -120,10 +120,15 @@ if menu == "🏠 Dashboard":
         col1.metric("Total Pengunjung", f"{total_seluruh}")
         col2.metric("Wilayah Terbanyak", total_per_wilayah.idxmax(), f"{total_per_wilayah.max()}")
         col3.metric("Wilayah Tersedikit", total_per_wilayah.idxmin(), f"{total_per_wilayah.min()}")
-
-        fig = px.bar(total_per_wilayah, x=total_per_wilayah.index, y=total_per_wilayah.values,
-                     title="Total Pengunjung per Wilayah", text=total_per_wilayah.values,
-                     color=total_per_wilayah.values, color_continuous_scale="Blues")
+        fig = px.bar(
+            x=total_per_wilayah.index,
+            y=total_per_wilayah.values,
+            title="Total Pengunjung per Wilayah",
+            text=total_per_wilayah.values,
+            labels={"x": "Wilayah", "y": "Total Pengunjung"},
+            color=total_per_wilayah.values,
+            color_continuous_scale="Blues"
+        )
         fig.update_traces(textposition='outside')
         st.plotly_chart(fig, use_container_width=True)
     else:
