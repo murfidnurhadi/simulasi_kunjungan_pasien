@@ -31,8 +31,9 @@ menu = st.sidebar.radio("Pilih Halaman:", [
 # ========================
 # Path File Dataset
 # ========================
-excel_path = "dataset/dataset.xlsx"
-csv_path = "dataset/DataTrain.csv"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+excel_path = os.path.join(BASE_DIR, "dataset", "dataset.xlsx")
+csv_path = os.path.join(BASE_DIR, "dataset", "DataTrain.csv")
 
 @st.cache_data
 def load_data():
@@ -49,7 +50,16 @@ def load_data():
             st.error(f"❌ Gagal membaca CSV: {e}")
             return pd.DataFrame()
     else:
-        st.error("❌ File dataset tidak ditemukan. Pastikan file ada di folder dataset.")
+        st.warning("⚠ Dataset tidak ditemukan. Silakan upload file.")
+        uploaded_file = st.file_uploader("Upload file CSV atau Excel", type=["csv", "xlsx"])
+        if uploaded_file:
+            try:
+                if uploaded_file.name.endswith(".csv"):
+                    return pd.read_csv(uploaded_file)
+                else:
+                    return pd.read_excel(uploaded_file)
+            except Exception as e:
+                st.error(f"❌ Gagal membaca file upload: {e}")
         return pd.DataFrame()
 
 # Load Data
