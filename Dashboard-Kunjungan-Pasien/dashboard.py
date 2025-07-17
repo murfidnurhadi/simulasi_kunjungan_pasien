@@ -9,7 +9,7 @@ import random
 # ========================
 # 🔧 Konfigurasi Halaman
 # ========================
-logo_path = "images/images.png"
+logo_path = "images/unikom.png"
 if os.path.exists(logo_path):
     st.set_page_config(page_title="Dashboard Simulasi Monte Carlo", layout="wide", page_icon=logo_path)
 else:
