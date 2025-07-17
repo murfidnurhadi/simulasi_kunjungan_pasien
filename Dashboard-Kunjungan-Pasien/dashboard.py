@@ -21,7 +21,6 @@ menu = st.sidebar.radio(
 # ========================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 excel_path = os.path.join(BASE_DIR, "dataset", "dataset.xlsx")
-csv_path = os.path.join(BASE_DIR, "dataset", "DataTrain.csv")
 
 @st.cache_data
 def load_data():
