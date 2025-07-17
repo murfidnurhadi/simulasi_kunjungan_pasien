@@ -32,7 +32,7 @@ st.markdown("""
 # ========================
 # Sidebar Menu
 # ========================
-st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/a/a7/unikom.png", use_container_width=True)
+st.sidebar.image("https://github.com/murfidnurhadi/tubes_mosi2/blob/main/Dashboard-Kunjungan-Pasien/images/unikom.png", use_container_width=True)
 st.sidebar.title("📂 Menu Navigasi")
 menu = st.sidebar.radio("Pilih Halaman:", [
     "🏠 Dashboard", "📋 Data Train", "📈 Frekuensi & Interval", "🔢 RNG LCG", "🎲 Simulasi Monte Carlo"
