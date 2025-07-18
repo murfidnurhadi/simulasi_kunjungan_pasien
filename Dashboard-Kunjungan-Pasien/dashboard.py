@@ -1,8 +1,8 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import math
 import os
+import math
 import plotly.express as px
 
 # ========================
@@ -14,7 +14,9 @@ st.set_page_config(
     layout="wide"
 )
 
-# CSS Custom untuk UI lebih menarik
+# ========================
+# 🎨 CSS Custom
+# ========================
 st.markdown("""
     <style>
     .main { background-color: #f9f9f9; }
@@ -30,15 +32,26 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ========================
-# Sidebar Menu
+# 📂 Navigasi Sidebar
 # ========================
-st.sidebar.title("📂 Menu Navigasi")
-menu = st.sidebar.radio("Pilih Halaman:", [
-    "🏠 Dashboard", "📋 Data Train", "📈 Frekuensi & Interval", "🔢 RNG LCG", "🎲 Simulasi Monte Carlo"
-])
+with st.sidebar:
+    st.markdown("## 🧭 Navigasi")
+    st.markdown("---")
+    menu = st.radio(
+        "Pilih Halaman:",
+        options=[
+            "🏠 Dashboard",
+            "📊 Data Train",
+            "📈 Frekuensi & Interval",
+            "🔢 RNG LCG",
+            "🎲 Simulasi Monte Carlo"
+        ]
+    )
+    st.markdown("---")
+    st.info("Silakan pilih halaman dari menu di atas.")
 
 # ========================
-# Path File Dataset
+# 📂 Load Data
 # ========================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 excel_path = os.path.join(BASE_DIR, "dataset", "dataset.xlsx")
@@ -64,7 +77,7 @@ def load_excel():
 df = load_excel()
 
 # ========================
-# Fungsi bantu
+# 🔍 Fungsi Frekuensi
 # ========================
 def hitung_frekuensi(data):
     n = len(data)
@@ -75,22 +88,20 @@ def hitung_frekuensi(data):
 
     bins = range(x_min, x_max + h, h)
     labels = [f"{bins[i]} - {bins[i+1]-1}" for i in range(len(bins)-1)]
-    
-    if pd.cut([x_max], bins=bins, right=False).isnull().all() and len(labels) > 0:
-        last_low = int(labels[-1].split(' - ')[0])
-        labels[-1] = f"{last_low} - {x_max}"
 
     freq_table = pd.cut(data, bins=bins, labels=labels, right=False, include_lowest=True).value_counts().sort_index().reset_index()
     freq_table.columns = ["Interval Jumlah", "Frekuensi"]
-    
+
     freq_table["No"] = range(1, len(freq_table) + 1)
     total = freq_table["Frekuensi"].sum()
     prob_raw = freq_table["Frekuensi"] / total
     prob_rounded = prob_raw.round(2)
+
+    # Perbaiki jika sum probabilitas ≠ 1
     selisih = 1.00 - prob_rounded.sum()
     if selisih != 0:
-        diff_indices = (prob_raw - prob_rounded).nlargest(int(abs(selisih) * 100)).index
-        prob_rounded.loc[diff_indices] += 0.01 * np.sign(selisih)
+        idx_max = prob_rounded.idxmax()
+        prob_rounded.iloc[idx_max] += selisih
 
     freq_table["Probabilitas"] = prob_rounded
     freq_table["Prob. Kumulatif"] = freq_table["Probabilitas"].cumsum().round(2)
@@ -98,11 +109,11 @@ def hitung_frekuensi(data):
     upper_bounds = (freq_table["Prob. Kumulatif"] * 100).astype(int)
     lower_bounds = [1] + [ub + 1 for ub in upper_bounds[:-1]]
     freq_table["Interval Angka Acak"] = [f"{lb}-{ub}" for lb, ub in zip(lower_bounds, upper_bounds)]
-    
+
     return freq_table, n, R, k, h
 
 # ========================
-# 🟥 Dashboard
+# 🏠 Dashboard
 # ========================
 if menu == "🏠 Dashboard":
     st.title("📊 Dashboard Simulasi Monte Carlo")
@@ -120,6 +131,7 @@ if menu == "🏠 Dashboard":
         col1.metric("Total Pengunjung", f"{total_seluruh}")
         col2.metric("Wilayah Terbanyak", total_per_wilayah.idxmax(), f"{total_per_wilayah.max()}")
         col3.metric("Wilayah Tersedikit", total_per_wilayah.idxmin(), f"{total_per_wilayah.min()}")
+
         fig = px.bar(
             x=total_per_wilayah.index,
             y=total_per_wilayah.values,
@@ -135,9 +147,9 @@ if menu == "🏠 Dashboard":
         st.info("Upload file Excel (.xlsx) untuk melihat data.")
 
 # ========================
-# 🟦 Data Train
+# 📊 Data Train
 # ========================
-elif menu == "📋 Data Train":
+elif menu == "📊 Data Train":
     st.title("📋 Data Train Pengunjung")
     if not df.empty:
         st.dataframe(df.reset_index(drop=True), use_container_width=True)
@@ -145,7 +157,7 @@ elif menu == "📋 Data Train":
         st.warning("Data tidak tersedia.")
 
 # ========================
-# 🟩 Frekuensi & Interval
+# 📈 Frekuensi & Interval
 # ========================
 elif menu == "📈 Frekuensi & Interval":
     st.title("📈 Distribusi Frekuensi")
@@ -163,7 +175,7 @@ elif menu == "📈 Frekuensi & Interval":
         st.warning("Data tidak tersedia.")
 
 # ========================
-# 🟨 RNG LCG
+# 🔢 RNG LCG
 # ========================
 elif menu == "🔢 RNG LCG":
     st.title("🔢 Linear Congruential Generator (LCG)")
@@ -190,7 +202,7 @@ elif menu == "🔢 RNG LCG":
         st.success("Bilangan acak berhasil dibuat!")
 
 # ========================
-# 🟧 Simulasi Monte Carlo
+# 🎲 Simulasi Monte Carlo
 # ========================
 elif menu == "🎲 Simulasi Monte Carlo":
     st.title("🎲 Simulasi Monte Carlo")
