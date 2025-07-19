@@ -31,6 +31,7 @@ with st.sidebar:
 # =========================
 # 📂 Load Data
 # ========================
+df = load_data(excel_path)
 excel_path = "dataset/dataset.xlsx"
 
 @st.cache_data
