@@ -96,7 +96,7 @@ if menu == "🏠 Dashboard":
 elif menu == "📊 Data Train":
     st.title("📊 Data Train Pengunjung")
     if not df.empty:
-        st.dataframe(df.reset_index(drop=True), use_container_width=True)
+        st.dataframe(df.reset_index(drop=True), use_container_width=True, hide_index=True)
     else:
         st.warning("Data tidak tersedia.")
 
