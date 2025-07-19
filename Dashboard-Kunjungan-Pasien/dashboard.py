@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import os
 import math
-import random
 import plotly.express as px
 
 # ========================
@@ -54,23 +53,31 @@ with st.sidebar:
 # ========================
 # 📂 Load Data
 # ========================
-excel_path = "dataset.xlsx"  # Pastikan file ini ada di folder yang sama
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+excel_path = os.path.join(BASE_DIR, "dataset", "dataset.xlsx")
 
 @st.cache_data
 def load_excel():
-    try:
-        return pd.read_excel(excel_path, sheet_name="DataTrain")
-    except FileNotFoundError:
-        st.error(f"❌ File tidak ditemukan: {excel_path}")
-        return pd.DataFrame()
-    except Exception as e:
-        st.error(f"❌ Gagal membaca file: {e}")
+    if os.path.exists(excel_path):
+        try:
+            return pd.read_excel(excel_path, sheet_name="DataTrain")
+        except Exception as e:
+            st.error(f"❌ Gagal membaca Excel: {e}")
+            return pd.DataFrame()
+    else:
+        st.warning("⚠ File Excel tidak ditemukan. Upload file .xlsx.")
+        uploaded_file = st.file_uploader("Upload file Excel (.xlsx)", type=["xlsx"])
+        if uploaded_file:
+            try:
+                return pd.read_excel(uploaded_file, sheet_name="DataTrain")
+            except Exception as e:
+                st.error(f"❌ Gagal membaca file upload: {e}")
         return pd.DataFrame()
 
 df = load_excel()
 
 # ========================
-# 🔍 Fungsi Hitung Frekuensi
+# 🔍 Fungsi Frekuensi
 # ========================
 def hitung_frekuensi(data):
     n = len(data)
@@ -90,7 +97,7 @@ def hitung_frekuensi(data):
     prob_raw = freq_table["Frekuensi"] / total
     prob_rounded = prob_raw.round(2)
 
-    # Koreksi probabilitas agar sum = 1
+    # Perbaiki jika sum probabilitas ≠ 1
     selisih = 1.00 - prob_rounded.sum()
     if selisih != 0:
         idx_max = prob_rounded.idxmax()
@@ -121,9 +128,9 @@ if menu == "🏠 Dashboard":
         total_seluruh = total_per_wilayah.sum()
 
         col1, col2, col3 = st.columns(3)
-        col1.metric("Total Pengunjung", f"{total_seluruh:,}")
-        col2.metric("Wilayah Terbanyak", total_per_wilayah.idxmax(), f"{total_per_wilayah.max():,}")
-        col3.metric("Wilayah Tersedikit", total_per_wilayah.idxmin(), f"{total_per_wilayah.min():,}")
+        col1.metric("Total Pengunjung", f"{total_seluruh}")
+        col2.metric("Wilayah Terbanyak", total_per_wilayah.idxmax(), f"{total_per_wilayah.max()}")
+        col3.metric("Wilayah Tersedikit", total_per_wilayah.idxmin(), f"{total_per_wilayah.min()}")
 
         fig = px.bar(
             x=total_per_wilayah.index,
@@ -233,4 +240,4 @@ elif menu == "🎲 Simulasi Monte Carlo":
                     })
 
                 st.subheader("Hasil Simulasi")
-                st.dataframe(pd.DataFrame(sim_results), use_container_width=True)
+                st.dataframe(pd.DataFrame(sim_results), use_container_width=True) bantu saya menggabungkan kedua kodingan, kodingan kedua akan saya kirim
