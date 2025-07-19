@@ -31,6 +31,10 @@ with st.sidebar:
 # =========================
 # Load Data
 # =========================
+# 📂 Load Data
+# ========================
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+excel_path = os.path.join(BASE_DIR, "dataset", "dataset.xlsx")
 excel_path = "dataset/dataset.xlsx"  # Sesuaikan dengan folder tempat dataset Anda
 file_path = "dataset.xlsx"  # Nama file default
 @st.cache_data
