@@ -149,7 +149,7 @@ elif menu == "📈 Frekuensi dan Interval":
             lower_bounds = [1] + [ub + 1 for ub in upper_bounds[:-1]]
             freq_table["Interval Angka Acak"] = [f"{lb} - {ub}" for lb, ub in zip(lower_bounds, upper_bounds)]
 
-            st.dataframe(freq_table, use_container_width=True)
+            st.dataframe(freq_table, use_container_width=True, hide_index=True)
             st.markdown(f"Jumlah Data: {n} | R: {R} | k: {k} | h: {h}")
     else:
         st.warning("Data tidak tersedia.")
