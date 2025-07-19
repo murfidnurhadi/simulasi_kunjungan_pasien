@@ -54,7 +54,7 @@ with st.sidebar:
 # ========================
 # 📂 Load Data
 # ========================
-excel_path = "Tubes_Mosi.xlsx"  # Pastikan file ini ada di folder yang sama
+excel_path = "dataset.xlsx"  # Pastikan file ini ada di folder yang sama
 
 @st.cache_data
 def load_excel():
