@@ -133,6 +133,8 @@ elif menu == "📈 Frekuensi dan Interval":
             freq_table = kelas.value_counts().sort_index().reset_index()
             freq_table.columns = ["Interval Jumlah", "Frekuensi"]
             freq_table = freq_table[freq_table["Frekuensi"] > 0].reset_index(drop=True)
+            bounds = freq_table["Interval Jumlah"].str.split(" - ", expand=True).astype(int)
+            freq_table["Titik Tengah"] = (bounds[0] + bounds[1]) / 2
 
             total = freq_table["Frekuensi"].sum()
             prob_raw = freq_table["Frekuensi"] / total
