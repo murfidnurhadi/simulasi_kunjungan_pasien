@@ -240,4 +240,4 @@ elif menu == "🎲 Simulasi Monte Carlo":
                     })
 
                 st.subheader("Hasil Simulasi")
-                st.dataframe(pd.DataFrame(sim_results), use_container_width=True) bantu saya menggabungkan kedua kodingan, kodingan kedua akan saya kirim
+                st.dataframe(pd.DataFrame(sim_results), use_container_width=True)
