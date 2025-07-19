@@ -237,7 +237,7 @@ elif menu == "🎲 Simulasi":
                 freq_table["Interval Angka Acak"] = [f"{lb} - {ub}" for lb, ub in zip(lower_bounds, upper_bounds)]
 
                 st.subheader("Tabel Distribusi")
-                st.dataframe(freq_table, use_container_width=True)
+                st.dataframe(freq_table, use_container_width=True, hide_index=True)
 
                 # Simulasi
                 def get_simulated_value(rand, freq_table):
@@ -257,7 +257,7 @@ elif menu == "🎲 Simulasi":
 
                 st.subheader("Hasil Simulasi")
                 sim_df = pd.DataFrame(sim_results)
-                st.dataframe(sim_df, use_container_width=True)
+                st.dataframe(sim_df, use_container_width=True, hide_index=True)
 
                 st.markdown(f"**Total Simulasi:** {sim_df['Jumlah Pengunjung'].sum()}")
                 st.markdown(f"**Rata-rata:** {sim_df['Jumlah Pengunjung'].mean():.2f}")
