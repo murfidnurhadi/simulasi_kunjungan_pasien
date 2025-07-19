@@ -31,6 +31,7 @@ with st.sidebar:
 # =========================
 # Load Data
 # =========================
+excel_path = "dataset/dataset.xlsx"  # Sesuaikan dengan folder tempat dataset Anda
 file_path = "dataset.xlsx"  # Nama file default
 @st.cache_data
 def load_data(path):
