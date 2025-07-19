@@ -190,7 +190,7 @@ elif menu == "🎲 Simulasi":
     else:
         rng_df = st.session_state['rng_df']
         st.subheader("Bilangan Acak:")
-        st.dataframe(rng_df, use_container_width=True)
+        st.dataframe(rng_df, use_container_width=True, hide_index=True)
 
         if not df.empty:
             df.columns = df.columns.str.strip().str.lower()
