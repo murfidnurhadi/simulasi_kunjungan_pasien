@@ -4,6 +4,7 @@ import numpy as np
 import math
 import random
 import plotly.express as px
+import os
 
 # =========================
 # Konfigurasi Halaman
@@ -31,18 +32,17 @@ with st.sidebar:
 # =========================
 # 📂 Load Data
 # ========================
-df = load_data(excel_path)
-excel_path = "dataset/dataset.xlsx"
+excel_path = os.path.join("dataset", "dataset.xlsx")
 
 @st.cache_data
 def load_data(path):
     try:
         return pd.read_excel(path)
     except:
-        st.error("❌ Gagal memuat file Excel. Pastikan file 'dataset.xlsx' ada di folder yang sama.")
+        st.error("❌ Gagal memuat file Excel. Pastikan file 'dataset.xlsx' ada di folder 'dataset/'.")
         return pd.DataFrame()
 
-df = load_data(file_path)
+df = load_data(excel_path)
 
 # =========================
 # Dashboard
