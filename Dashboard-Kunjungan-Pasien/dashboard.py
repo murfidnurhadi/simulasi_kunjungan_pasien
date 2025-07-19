@@ -29,14 +29,10 @@ with st.sidebar:
     st.info("Pilih halaman dari menu di atas untuk menampilkan data atau menjalankan simulasi.")
 
 # =========================
-# Load Data
-# =========================
 # 📂 Load Data
 # ========================
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-excel_path = os.path.join(BASE_DIR, "dataset", "dataset.xlsx")
-excel_path = "dataset/dataset.xlsx"  # Sesuaikan dengan folder tempat dataset Anda
-file_path = "dataset.xlsx"  # Nama file default
+excel_path = "dataset/dataset.xlsx"
+
 @st.cache_data
 def load_data(path):
     try:
