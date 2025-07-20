@@ -162,9 +162,17 @@ elif menu == "📈 Frekuensi dan Interval":
             lower_bounds = [1] + [ub + 1 for ub in upper_bounds[:-1]]
             freq_table["Interval Angka Acak"] = [f"{lb} - {ub}" for lb, ub in zip(lower_bounds, upper_bounds)]
 
-            # Tampilkan hasil
+            # Tampilkan hasil tabel
             st.dataframe(freq_table, use_container_width=True, hide_index=True)
-            st.markdown(f"**Jumlah Data:** {n} | **R:** {R} | **k:** {k} | **h:** {h}")
+
+            # Tampilkan keterangan di bawah tabel (vertical)
+            st.markdown("### ℹ️ Keterangan")
+            st.write(f"Jumlah Data       : {n}")
+            st.write(f"Terbesar (Xmax)   : {x_max}")
+            st.write(f"Terkecil (Xmin)   : {x_min}")
+            st.write(f"Jangkauan (Range) : {R}")
+            st.write(f"Kelas (Class)     : {k}")
+            st.write(f"Panjang Kelas     : {h}")
     else:
         st.warning("Data tidak tersedia.")
 
