@@ -201,7 +201,7 @@ elif menu == "🔢 RNG LCG":
 
         # Tabel hasil
         st.subheader("📊 Hasil RNG LCG")
-        st.dataframe(rng_df.reset_index(drop=True), use_container_width=True, hide_index=True)
+        st.dataframe(rng_df, use_container_width=True)
 
         # Info duplikat
         if duplicate_flag:
@@ -301,7 +301,7 @@ elif menu == "🎲 Simulasi":
                 sim_df["Perubahan (%)"] = sim_df["Perubahan (%)"].round(2)
 
                 st.subheader("📊 Hasil Simulasi")
-                st.dataframe(sim_df.reset_index(drop=True), use_container_width=True, hide_index=True)
+                st.dataframe(sim_df, use_container_width=True)
 
                 total_sim = int(round(sim_df['Jumlah Pengunjung'].sum()))
                 avg_sim = int(round(sim_df['Jumlah Pengunjung'].mean()))
