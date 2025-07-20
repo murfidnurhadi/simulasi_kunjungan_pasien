@@ -180,7 +180,7 @@ elif menu == "🔢 RNG LCG":
             "Uᵢ": [round(val / m, 4) for val in rng_values]
         })
         st.session_state['rng_df'] = rng_df
-        st.dataframe(rng_df, use_container_width=True)
+        st.dataframe(rng_df, use_container_width=True, hide_index=True)
 
 # ========================
 # 🎲 Simulasi Monte Carlo
