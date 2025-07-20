@@ -297,7 +297,26 @@ elif menu == "🎲 Simulasi":
                 sim_results = []
                 for _, row in rng_df.iterrows():
                     val, acak = get_simulated_value(row["Uᵢ"], freq_table)
-                    sim_results.append({"Percobaan": row["i"], "Angka Acak": acak, "Jumlah Pengunjung": val})
+                    sim_results.append({"Percobaan": row["i"], "Angka Acak": acak, "Jumlah Pengunjung": val})# Analisis hasil simulasi
+tren_counts = sim_df['Tren'].value_counts()
+naik = tren_counts.get('Naik', 0)
+turun = tren_counts.get('Turun', 0)
+stabil = tren_counts.get('Stabil', 0)
+
+max_val = sim_df['Jumlah Pengunjung'].max()
+min_val = sim_df['Jumlah Pengunjung'].min()
+
+st.subheader("📌 Wawasan untuk Pengambil Keputusan")
+st.markdown(f"""
+- **Rata-rata kunjungan:** {int(avg_sim):,} pasien per periode.
+- **Tren dominan:** Naik ({naik} kali), Turun ({turun} kali), Stabil ({stabil} kali).
+- **Rentang kunjungan:** {min_val:,} hingga {max_val:,} pasien.
+- **Interpretasi:** Jika tren dominan naik, perlu persiapan kapasitas lebih besar. 
+  Jika fluktuasi tinggi (selisih > 200), siapkan rencana darurat.
+- **Saran:** 
+    - Rencanakan stok obat dan tenaga medis minimal untuk {int(avg_sim):,} pasien.
+    - Pertimbangkan alokasi tambahan saat prediksi mencapai {max_val:,} pasien.
+""".replace(",", "."))
 
                 sim_df = pd.DataFrame(sim_results)
 
@@ -317,8 +336,30 @@ elif menu == "🎲 Simulasi":
                 total_sim = int(round(sim_df['Jumlah Pengunjung'].sum()))
                 avg_sim = int(round(sim_df['Jumlah Pengunjung'].mean()))
 
-                st.markdown(f"**Total Pengunjung:** {total_sim}")
-                st.markdown(f"**Rata-rata Pengunjung:** {avg_sim}")
+                st.markdown(f"**Total Pengunjung:** {total_sim:,}".replace(",", "."))
+                st.markdown(f"**Rata-rata Pengunjung:** {avg_sim:,}".replace(",", "."))
+
+                # 🔍 Analisis hasil simulasi
+                tren_counts = sim_df['Tren'].value_counts()
+                naik = tren_counts.get('Naik', 0)
+                turun = tren_counts.get('Turun', 0)
+                stabil = tren_counts.get('Stabil', 0)
+
+                max_val = sim_df['Jumlah Pengunjung'].max()
+                min_val = sim_df['Jumlah Pengunjung'].min()
+                
+                st.subheader("📌 Wawasan untuk Pengambil Keputusan")
+                st.markdown(f"""
+                - **Rata-rata kunjungan:** {avg_sim:,} pasien per periode.
+                - **Tren dominan:** Naik ({naik} kali), Turun ({turun} kali), Stabil ({stabil} kali).
+                - **Rentang kunjungan:** {min_val:,} hingga {max_val:,} pasien.
+                - **Interpretasi:** Jika tren dominan naik, perlu persiapan kapasitas lebih besar. 
+                  Jika fluktuasi tinggi (selisih > 200), siapkan rencana darurat.
+                - **Saran:** 
+                    - Rencanakan stok obat dan tenaga medis minimal untuk {avg_sim:,} pasien.
+                    - Pertimbangkan alokasi tambahan saat prediksi mencapai {max_val:,} pasien.
+                """.replace(",", "."))
+
 
                 # Diagram Garis
                 st.subheader("📊 Visualisasi Hasil Simulasi")
