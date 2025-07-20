@@ -261,6 +261,10 @@ elif menu == "🎲 Simulasi":
                 freq_table.columns = ["Interval Jumlah", "Frekuensi"]
                 freq_table = freq_table[freq_table["Frekuensi"] > 0].reset_index(drop=True)
 
+                # Tambah Titik Tengah
+                bounds = freq_table["Interval Jumlah"].str.split(" - ", expand=True).astype(int)
+                freq_table["Titik Tengah"] = ((bounds[0] + bounds[1]) / 2).round(2)
+
                 # Hitung probabilitas
                 total = freq_table["Frekuensi"].sum()
                 prob_raw = freq_table["Frekuensi"] / total
@@ -278,6 +282,9 @@ elif menu == "🎲 Simulasi":
                 lower_bounds = [1] + [ub + 1 for ub in upper_bounds[:-1]]
                 freq_table["Interval Angka Acak"] = [f"{lb} - {ub}" for lb, ub in zip(lower_bounds, upper_bounds)]
 
+                # Tambahkan nomor urut
+                freq_table.insert(0, "No", range(1, len(freq_table) + 1))
+
                 st.session_state['freq_table'] = freq_table
 
                 # Tampilkan tabel distribusi
@@ -290,9 +297,7 @@ elif menu == "🎲 Simulasi":
                     for _, row in freq_table.iterrows():
                         low, high = map(int, row["Interval Angka Acak"].split(' - '))
                         if low <= angka_acak <= high:
-                            jumlah_low, jumlah_high = map(int, row["Interval Jumlah"].split(' - '))
-                            titik_tengah = (jumlah_low + jumlah_high) / 2  # Ambil titik tengah
-                            return titik_tengah, angka_acak
+                            return row["Titik Tengah"], angka_acak
                     return None, angka_acak
 
                 sim_results = []
@@ -320,3 +325,11 @@ elif menu == "🎲 Simulasi":
 
                 st.markdown(f"**Total Simulasi:** {total_sim}")
                 st.markdown(f"**Rata-rata:** {avg_sim:.2f}")
+
+                # Diagram Batang untuk hasil simulasi
+                st.subheader("📊 Visualisasi Hasil Simulasi")
+                fig2 = px.bar(sim_df, x="Percobaan", y="Jumlah Pengunjung", text="Jumlah Pengunjung",
+                              title=f"Hasil Simulasi Monte Carlo - {selected_daerah.capitalize()}",
+                              color="Jumlah Pengunjung", color_continuous_scale="Blues")
+                fig2.update_traces(textposition="outside")
+                st.plotly_chart(fig2, use_container_width=True)
