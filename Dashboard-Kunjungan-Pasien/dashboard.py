@@ -146,6 +146,9 @@ elif menu == "📈 Frekuensi dan Interval":
             # freq_table["Titik Tengah"] = ((bounds[0] + bounds[1]) // 2).astype(int)
 
             # Hitung titik tengah (dengan koma)
+            # bounds = freq_table["Interval Jumlah"].str.split(" - ", expand=True).astype(int)
+            # freq_table["Titik Tengah"] = (bounds[0] + bounds[1]) / 2
+
             bounds = freq_table["Interval Jumlah"].str.split(" - ", expand=True).astype(int)
             freq_table["Titik Tengah"] = (bounds[0] + bounds[1]) / 2
 
