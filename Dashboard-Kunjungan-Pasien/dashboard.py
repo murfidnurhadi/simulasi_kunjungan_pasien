@@ -322,11 +322,15 @@ elif menu == "🎲 Simulasi":
 
                 st.markdown(f"**Total Simulasi:** {total_sim}")
                 st.markdown(f"**Rata-rata:** {avg_sim:.2f}")
-
-                # Diagram Batang tetap ditampilkan
+                
+                # Diagram Garis
                 st.subheader("📊 Visualisasi Hasil Simulasi")
-                fig2 = px.bar(sim_df, x="Percobaan", y="Jumlah Pengunjung", text="Jumlah Pengunjung",
-                              title=f"Hasil Simulasi Monte Carlo - {selected_daerah.capitalize()}",
-                              color="Jumlah Pengunjung", color_continuous_scale="Blues")
-                fig2.update_traces(textposition="outside")
+                fig2 = px.line(
+                sim_df,
+                x="Percobaan",
+                y="Jumlah Pengunjung",
+                markers=True,
+                title=f"Hasil Simulasi Monte Carlo - {selected_daerah.capitalize()}",
+                )
+                fig2.update_traces(line=dict(color='blue', width=3), marker=dict(size=8))
                 st.plotly_chart(fig2, use_container_width=True)
