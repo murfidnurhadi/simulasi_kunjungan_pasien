@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import math
-import random
 import os
 import plotly.express as px
 
@@ -120,10 +119,6 @@ elif menu == "📈 Frekuensi dan Interval":
             freq_table = kelas.value_counts().sort_index().reset_index()
             freq_table.columns = ["Interval Jumlah", "Frekuensi"]
 
-            # Tambah Titik Tengah
-            bounds = freq_table["Interval Jumlah"].str.split(" - ", expand=True).astype(int)
-            freq_table["Titik Tengah"] = ((bounds[0] + bounds[1]) / 2).round(2)
-
             # Probabilitas & kumulatif
             prob_raw = freq_table["Frekuensi"] / n
             prob_rounded = prob_raw.round(2)
@@ -164,7 +159,6 @@ elif menu == "📈 Frekuensi dan Interval":
 elif menu == "🔢 RNG LCG":
     st.title("🔢 RNG LCG (Linear Congruential Generator)")
 
-    # Input parameter
     a = st.number_input("Multiplier (a)", min_value=1, value=21)
     c = st.number_input("Increment (c)", min_value=0, value=17)
     m = st.number_input("Modulus (m)", min_value=1, value=100)
@@ -190,7 +184,11 @@ elif menu == "🔢 RNG LCG":
 
             rng_data.append((i, zi_minus_1_display, zi, round(ui, 4), angka_acak))
 
-        rng_df = pd.DataFrame(rng_data, columns=["i", "Zᵢ₋₁", "Zᵢ", "Uᵢ", "Angka Acak (Uᵢ×100)"])
+        rng_df = pd.DataFrame(
+            rng_data,
+            columns=["i", "Zᵢ₋₁", "Zᵢ", "Uᵢ", "Angka Acak (Uᵢ×100)"]
+        )
+
         st.session_state['rng_df'] = rng_df
 
         st.subheader("📊 Hasil RNG LCG")
@@ -217,16 +215,18 @@ elif menu == "🎲 Simulasi":
         st.warning("Generate bilangan acak dulu di menu RNG LCG.")
     else:
         rng_df = st.session_state['rng_df']
+
         if not df.empty:
             df.columns = df.columns.str.strip().str.lower()
             exclude_cols = ["id", "bulan", "tahun"]
             daerah_cols = [col for col in df.columns if col not in exclude_cols]
+
             selected_daerah = st.selectbox("📍 Pilih Daerah:", ["Pilih daerah"] + daerah_cols)
 
             if selected_daerah != "Pilih daerah":
-                # === Distribusi Frekuensi ===
                 data = df[selected_daerah].dropna()
                 n = len(data)
+
                 x_min, x_max = data.min(), data.max()
                 R = x_max - x_min
                 k = math.ceil(1 + 3.3 * math.log10(n))
@@ -265,10 +265,12 @@ elif menu == "🎲 Simulasi":
                 lower_bounds = [1] + [ub + 1 for ub in upper_bounds[:-1]]
                 freq_table["Interval Angka Acak"] = [f"{lb} - {ub}" for lb, ub in zip(lower_bounds, upper_bounds)]
 
+                freq_table.insert(0, "No", range(1, len(freq_table) + 1))
+                st.session_state['freq_table'] = freq_table
+
                 st.subheader(f"Tabel Distribusi - {selected_daerah.capitalize()}")
                 st.dataframe(freq_table, use_container_width=True)
 
-                # === Simulasi ===
                 def get_simulated_value(rand, freq_table):
                     angka_acak = int(rand * 100)
                     if angka_acak == 0: angka_acak = 1
@@ -281,13 +283,13 @@ elif menu == "🎲 Simulasi":
                 sim_results = []
                 for _, row in rng_df.iterrows():
                     val, acak = get_simulated_value(row["Uᵢ"], freq_table)
-                    sim_results.append({"Percobaan": row["i"], "Angka Acak": acak, "Jumlah Pengunjung": val})
+                    sim_results.append({"Bulan ke.": row["i"], "Angka Acak": acak, "Jumlah Pengunjung": val})
 
                 sim_df = pd.DataFrame(sim_results)
                 sim_df["Selisih"] = sim_df["Jumlah Pengunjung"].diff().fillna(0)
                 sim_df["Tren"] = sim_df["Selisih"].apply(lambda x: "Naik" if x > 0 else ("Turun" if x < 0 else "Stabil"))
                 sim_df["Perubahan (%)"] = sim_df.apply(
-                    lambda row: 0 if row["Percobaan"] == 1 or (row["Jumlah Pengunjung"] - row["Selisih"]) == 0
+                    lambda row: 0 if row["Bulan ke."] == 1 or (row["Jumlah Pengunjung"] - row["Selisih"]) == 0 
                     else (row["Selisih"] / (row["Jumlah Pengunjung"] - row["Selisih"])) * 100, axis=1
                 )
                 sim_df["Perubahan (%)"] = sim_df["Perubahan (%)"].round(2)
@@ -301,11 +303,11 @@ elif menu == "🎲 Simulasi":
                 st.markdown(f"**Total Pengunjung:** {total_sim:,}".replace(",", "."))
                 st.markdown(f"**Rata-rata Pengunjung:** {avg_sim:,}".replace(",", "."))
 
-                # === Wawasan Pengambil Keputusan ===
                 tren_counts = sim_df['Tren'].value_counts()
                 naik = tren_counts.get('Naik', 0)
                 turun = tren_counts.get('Turun', 0)
                 stabil = tren_counts.get('Stabil', 0)
+
                 max_val = sim_df['Jumlah Pengunjung'].max()
                 min_val = sim_df['Jumlah Pengunjung'].min()
 
@@ -321,9 +323,8 @@ elif menu == "🎲 Simulasi":
                     - Pertimbangkan alokasi tambahan saat prediksi mencapai {max_val:,} pasien.
                 """.replace(",", "."))
 
-                # === Visualisasi ===
                 st.subheader("📊 Visualisasi Hasil Simulasi")
-                fig2 = px.line(sim_df, x="Percobaan", y="Jumlah Pengunjung", markers=True,
+                fig2 = px.line(sim_df, x="Bulan ke.", y="Jumlah Pengunjung", markers=True,
                                title=f"Hasil Simulasi Monte Carlo - {selected_daerah.capitalize()}",
                                line_shape="linear")
                 fig2.update_traces(line=dict(color='blue', width=3), marker=dict(size=8))
