@@ -147,7 +147,7 @@ elif menu == "📈 Frekuensi dan Interval":
 
             # Hitung titik tengah (dengan koma)
             bounds = freq_table["Interval Jumlah"].str.split(" - ", expand=True).astype(int)
-            freq_table["Titik Tengah"] = ((bounds[0] + bounds[1]) / 2).round(2)
+            freq_table["Titik Tengah"] = (bounds[0] + bounds[1]) / 2
 
 
             # Hitung probabilitas
