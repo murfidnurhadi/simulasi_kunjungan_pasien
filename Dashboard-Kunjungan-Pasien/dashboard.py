@@ -177,16 +177,15 @@ elif menu == "🔢 RNG LCG":
             ui = zi / m
             angka_acak = int(ui * 100)
             rng_data.append((i, zi, round(ui, 4), angka_acak))
+            
+            # zi_minus_1 = zi
+            # zi = (a * zi_minus_1 + c) % m
+            # ui = zi / m
+            # angka_acak = int(ui * 100)
 
-        # for i in range(1, n_gen + 1):
-        #     zi_minus_1 = zi
-        #     zi = (a * zi_minus_1 + c) % m
-        #     ui = zi / m
-        #     angka_acak = int(ui * 100)
-
-            if zi in all_zi:
-                duplicate_flag = True
-            all_zi.append(zi)
+            # if zi in all_zi:
+            #     duplicate_flag = True
+            # all_zi.append(zi)
 
             rng_data.append((i, zi_minus_1, zi, round(ui, 4), angka_acak))
 
