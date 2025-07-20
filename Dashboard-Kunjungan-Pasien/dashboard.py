@@ -178,7 +178,7 @@ elif menu == "📈 Frekuensi dan Interval":
         st.warning("Data tidak tersedia.")
 
 # ========================
-# 🔢 RNG LCG
+# 🔢 RNG LCG (No Duplicate Xi & Uᵢ)
 # ========================
 elif menu == "🔢 RNG LCG":
     st.title("🔢 Linear Congruential Generator (LCG)")
@@ -190,22 +190,30 @@ elif menu == "🔢 RNG LCG":
 
     if st.button("Generate"):
         rng_values = []
-        seen = set()
+        seen_xi = set()
         xi = x0
         attempts = 0
-        max_attempts = m * 2  # batasi agar tidak infinite loop
+        max_attempts = m * 2
 
         while len(rng_values) < n_gen and attempts < max_attempts:
             xi = (a * xi + c) % m
             attempts += 1
-            if xi not in seen:
-                seen.add(xi)
+            if xi not in seen_xi:
+                seen_xi.add(xi)
                 rng_values.append(xi)
+
+        # Hitung Uᵢ berdasarkan Xi unik
+        u_values = [round(x / m, 4) for x in rng_values]
+
+        # Pastikan tidak ada duplikat Uᵢ karena pembulatan
+        # Jika ada, naikkan presisi
+        if len(set(u_values)) < len(u_values):
+            u_values = [round(x / m, 6) for x in rng_values]
 
         rng_df = pd.DataFrame({
             "i": range(1, len(rng_values) + 1),
             "Xᵢ": rng_values,
-            "Uᵢ": [round(val / m, 4) for val in rng_values]
+            "Uᵢ": u_values
         })
 
         st.session_state['rng_df'] = rng_df
