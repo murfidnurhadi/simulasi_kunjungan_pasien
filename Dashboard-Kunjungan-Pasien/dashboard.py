@@ -104,14 +104,13 @@ elif menu == "📊 Data Train":
 # 📈 Frekuensi & Interval
 # ========================
 elif menu == "📈 Frekuensi dan Interval":
-    st.title("📈 Frekuensi dan Interval")
+    st.title("📊 Distribusi Frekuensi: Kota " + selected_daerah.capitalize())
+
     if not df.empty:
-        # Normalisasi nama kolom
         df.columns = df.columns.str.strip().str.lower()
         exclude_cols = ["id", "bulan", "tahun"]
         daerah_cols = [col for col in df.columns if col not in exclude_cols]
 
-        # Pilih daerah
         selected_daerah = st.selectbox("📍 Pilih Daerah:", ["Pilih daerah"] + daerah_cols)
         if selected_daerah != "Pilih daerah":
             data = df[selected_daerah].dropna()
@@ -120,8 +119,8 @@ elif menu == "📈 Frekuensi dan Interval":
             # Hitung nilai dasar
             x_min, x_max = data.min(), data.max()
             R = x_max - x_min
-            k = math.ceil(1 + 3.3 * math.log10(n))  # jumlah kelas
-            h = int(R / k)  # interval (pembulatan ke bawah agar sesuai Excel)
+            k = math.ceil(1 + 3.3 * math.log10(n))
+            h = int(R / k)
 
             # Buat interval kelas
             lower = math.floor(x_min)
@@ -131,22 +130,17 @@ elif menu == "📈 Frekuensi dan Interval":
                 bins.append((lower, upper))
                 lower = upper + 1
 
-            # Label interval
             labels = [f"{low} - {high}" for low, high in bins]
             cut_bins = [b[0] for b in bins] + [bins[-1][1]]
-
-            # Kelompokkan data ke interval
             kelas = pd.cut(data, bins=cut_bins, labels=labels, include_lowest=True, right=True)
             freq_table = kelas.value_counts().sort_index().reset_index()
             freq_table.columns = ["Interval Jumlah", "Frekuensi"]
 
-            # Hitung titik tengah (dengan koma)
             bounds = freq_table["Interval Jumlah"].str.split(" - ", expand=True).astype(int)
-            freq_table["Titik Tengah"] = ((bounds[0] + bounds[1]) / 2).round(2)
+            freq_table["Titik Tengah"] = ((bounds[0] + bounds[1]) / 2).astype(int)
 
-            # Hitung probabilitas
-            total = freq_table["Frekuensi"].sum()
-            prob_raw = freq_table["Frekuensi"] / total
+            # Probabilitas dan kumulatif
+            prob_raw = freq_table["Frekuensi"] / n
             prob_rounded = prob_raw.round(2)
             selisih = 1.00 - prob_rounded.sum()
             if abs(selisih) > 0:
@@ -157,22 +151,27 @@ elif menu == "📈 Frekuensi dan Interval":
             freq_table["Prob. Kumulatif"] = freq_table["Probabilitas"].cumsum().round(2)
             freq_table["P.K * 100"] = (freq_table["Prob. Kumulatif"] * 100).astype(int)
 
-            # Interval angka acak
+            # Interval Angka Acak
             upper_bounds = freq_table["P.K * 100"]
             lower_bounds = [1] + [ub + 1 for ub in upper_bounds[:-1]]
             freq_table["Interval Angka Acak"] = [f"{lb} - {ub}" for lb, ub in zip(lower_bounds, upper_bounds)]
 
-            # Tampilkan hasil tabel
+            # Tambahkan nomor
+            freq_table.insert(0, "No", range(1, len(freq_table) + 1))
+
+            # Tampilkan tabel
             st.dataframe(freq_table, use_container_width=True, hide_index=True)
 
-            # Tampilkan keterangan di bawah tabel (vertical)
-            st.markdown("### ℹ️ Keterangan")
-            st.write(f"Jumlah Data       : {n}")
-            st.write(f"Terbesar (Xmax)   : {x_max}")
-            st.write(f"Terkecil (Xmin)   : {x_min}")
-            st.write(f"Jangkauan (Range) : {R}")
-            st.write(f"Kelas (Class)     : {k}")
-            st.write(f"Panjang Kelas     : {h}")
+            # Informasi tambahan
+            st.markdown("---")
+            st.markdown("### ℹ️ Informasi Tambahan")
+            col1, col2, col3, col4, col5, col6 = st.columns(6)
+            col1.metric("Terkecil (Xmin)", f"{x_min}")
+            col2.metric("Terbesar (Xmax)", f"{x_max}")
+            col3.metric("Jangkauan (R)", f"{R}")
+            col4.metric("Jumlah Kelas (k)", f"{k}")
+            col5.metric("Panjang Kelas (h)", f"{h}")
+            col6.markdown(f"**Jumlah Data (n):** {n}")
     else:
         st.warning("Data tidak tersedia.")
 
