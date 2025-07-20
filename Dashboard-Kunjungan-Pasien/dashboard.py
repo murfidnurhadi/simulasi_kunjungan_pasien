@@ -179,7 +179,7 @@ elif menu == "🔢 RNG LCG":
             ui = zi / m
             angka_acak = int(ui * 100)
 
-            # Simpan ke tabel dengan Zᵢ₋₁ dikurangi 1
+            # Zᵢ₋₁ untuk tampilan dikurangi 1
             zi_minus_1_display = zi_minus_1 - 1
 
             # Cek duplikat
@@ -192,7 +192,7 @@ elif menu == "🔢 RNG LCG":
         # Buat DataFrame
         rng_df = pd.DataFrame(
             rng_data,
-            columns=["i", "Zᵢ₋₁ (display)", "Zᵢ", "Uᵢ", "Angka Acak (Uᵢ×100)"]
+            columns=["i", "Zᵢ₋₁", "Zᵢ", "Uᵢ", "Angka Acak (Uᵢ×100)"]
         )
 
         st.session_state['rng_df'] = rng_df
@@ -207,10 +207,15 @@ elif menu == "🔢 RNG LCG":
         else:
             st.success("✅ Tidak ada duplikat.")
 
-        # Visualisasi
-        st.subheader("📉 Visualisasi Zᵢ")
-        fig = px.line(rng_df, x="i", y="Zᵢ", title="Perkembangan Nilai Zᵢ", markers=True)
-        st.plotly_chart(fig, use_container_width=True)
+        # Statistik RNG
+        st.markdown("### 📈 Statistik RNG")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Total Bilangan", n_gen)
+        with col2:
+            st.metric("Nilai Unik", len(set(all_zi)))
+        with col3:
+            st.metric("Jumlah Duplikat", n_gen - len(set(all_zi)))
 
 # ========================
 # 🎲 Simulasi Monte Carlo
