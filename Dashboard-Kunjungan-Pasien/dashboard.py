@@ -180,32 +180,92 @@ elif menu == "📈 Frekuensi dan Interval":
 import streamlit as st
 import pandas as pd
 
-# ========================
-# 🔢 RNG LCG
-# ========================
-elif menu == "🔢 RNG LCG":
-    st.title("🔢 Linear Congruential Generator (LCG)")
-    m = st.number_input("Modulus (m)", min_value=1, value=100)
-    a = st.number_input("Multiplier (a)", min_value=1, value=5)
-    c = st.number_input("Increment (c)", min_value=0, value=1)
-    x0 = st.number_input("Seed (x₀)", min_value=0, value=1)
-    n_gen = st.number_input("Jumlah Bilangan Acak", min_value=1, value=10)
+# ==========================================
+# 🟨 HALAMAN: RNG LCG
+# ==========================================
+elif menu_pilihan == "🔢 RNG LCG":
+    st.title("🔢 RNG - Linear Congruential Generator (LCG)")
 
-    if st.button("Generate"):
-        rng_values = []
-        xi = x0
-        for _ in range(n_gen):
-            xi = (a * xi + c) % m
-            rng_values.append(xi)
+    # Inisialisasi state
+    if "rng_data" not in st.session_state:
+        st.session_state.rng_data = None
+    if "show_rng" not in st.session_state:
+        st.session_state.show_rng = False
 
-        rng_df = pd.DataFrame({
-            "i": range(1, n_gen + 1),
-            "Xᵢ": rng_values,
-            "Uᵢ": [round(val / m, 4) for val in rng_values]
-        })
-        st.session_state['rng_df'] = rng_df
-        st.dataframe(rng_df, use_container_width=True, hide_index=True) 
-        )
+    st.markdown("Masukkan parameter untuk metode LCG:")
+    col1, col2 = st.columns(2)
+    with col1:
+        m = st.number_input("Modulus (m)", min_value=1, value=100, step=1)
+        a = st.number_input("Multiplier (a)", min_value=1, value=5, step=1)
+    with col2:
+        c = st.number_input("Increment (c)", min_value=0, value=1, step=1)
+        z0 = st.number_input("Seed (z₀)", min_value=0, value=1, step=1)
+    
+    n_gen = st.number_input("Jumlah Bilangan Acak", min_value=1, value=10, step=1)
+
+    # Tombol sejajar
+    col_gen, col_reset = st.columns([1, 1])
+    with col_gen:
+        generate_clicked = st.button("🎲 Generate", use_container_width=True)
+    with col_reset:
+        reset_clicked = st.button("❌ Reset", use_container_width=True)
+
+    # Generate bilangan acak
+    if generate_clicked:
+        zi = z0
+        rng_data = []
+        all_zi = []  # Untuk menyimpan semua nilai zi untuk pengecekan duplikat
+
+        for i in range(1, n_gen + 1):
+            zi_minus_1 = zi  # Simpan nilai sebelumnya untuk ditampilkan
+            zi_next = (a * zi_minus_1 + c) % m  # Hitung zi baru
+            ui = zi_next / m
+            angka_acak = int(ui * 100)  # Hitung ui * 100 sebagai integer
+            
+            # Simpan data
+            rng_data.append((i, zi_minus_1, zi_next, ui, angka_acak))
+            all_zi.append(zi_next)
+            zi = zi_next  # Set zi untuk iterasi berikutnya
+
+        rng_df = pd.DataFrame(rng_data, columns=["i", "Zᵢ₋₁", "Zᵢ", "Uᵢ", "Uᵢ*100"])
+        st.session_state.rng_data = rng_df
+        st.session_state.show_rng = True
+        st.session_state.all_zi = all_zi  # Simpan untuk pengecekan duplikat
+        st.success("Bilangan acak berhasil dibuat!")
+
+    # Reset
+    if reset_clicked:
+        st.session_state.rng_data = None
+        st.session_state.show_rng = False
+        st.session_state.all_zi = []
+        st.info("RNG berhasil direset.")
+
+    # Tampilkan hasil jika tersedia
+    if st.session_state.show_rng and st.session_state.rng_data is not None:
+        st.markdown("### 📋 Hasil LCG")
+        st.dataframe(st.session_state.rng_data, use_container_width=True, hide_index=True)
+        
+        # Cek duplikat
+        st.markdown("### 🔍 Pengecekan Duplikat Zᵢ")
+        all_zi = st.session_state.all_zi
+        duplicates = {}
+        
+        # Temukan nilai yang duplikat
+        for i, zi_val in enumerate(all_zi, 1):
+            if zi_val in duplicates:
+                duplicates[zi_val].append(i)
+            else:
+                duplicates[zi_val] = [i]
+        
+        # Filter hanya yang memiliki duplikat
+        real_duplicates = {k: v for k, v in duplicates.items() if len(v) > 1}
+        
+        if real_duplicates:
+            st.warning("⚠️ Ditemukan duplikat nilai Zᵢ:")
+            for zi_val, indices in real_duplicates.items():
+                st.write(f"Nilai Zᵢ = {zi_val} muncul pada iterasi ke: {', '.join(map(str, indices))}")
+        else:
+            st.success("✅ Tidak ditemukan nilai Zᵢ yang duplikat")
 
 # ========================
 # 🎲 Simulasi Monte Carlo
