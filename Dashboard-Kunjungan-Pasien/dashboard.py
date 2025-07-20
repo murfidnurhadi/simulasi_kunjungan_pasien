@@ -192,13 +192,15 @@ elif menu == "🔢 RNG LCG":
         rng_values = []
         seen = set()
         xi = x0
-        for i in range(n_gen):
+        attempts = 0
+        max_attempts = m * 2  # batasi agar tidak infinite loop
+
+        while len(rng_values) < n_gen and attempts < max_attempts:
             xi = (a * xi + c) % m
-            if xi in seen:
-                st.warning(f"⚠ Duplikasi terdeteksi di iterasi {i+1}, berhenti generate.")
-                break
-            seen.add(xi)
-            rng_values.append(xi)
+            attempts += 1
+            if xi not in seen:
+                seen.add(xi)
+                rng_values.append(xi)
 
         rng_df = pd.DataFrame({
             "i": range(1, len(rng_values) + 1),
@@ -210,8 +212,7 @@ elif menu == "🔢 RNG LCG":
         st.dataframe(rng_df, use_container_width=True, hide_index=True)
 
         if len(rng_values) < n_gen:
-            st.info(f"Hanya {len(rng_values)} bilangan acak unik yang dapat dihasilkan dari parameter ini.")
-
+            st.warning(f"⚠ Hanya {len(rng_values)} bilangan acak unik yang bisa dihasilkan (karena modulus terbatas).")
 
 # ========================
 # 🎲 Simulasi Monte Carlo
