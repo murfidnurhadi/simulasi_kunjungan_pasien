@@ -326,34 +326,21 @@ elif menu == "🎲 Simulasi":
                 st.subheader("Tabel Distribusi")
                 st.dataframe(freq_table, use_container_width=True, hide_index=True)
 
-                # ✅ SIMULASI TANPA DUPLIKAT ANGKA ACAK
-                used_randoms = set()
-                sim_results = []
-
-                for _, row in rng_df.iterrows():
-                    rand = row["Uᵢ"]
+                # Simulasi
+                def get_simulated_value(rand, freq_table):
                     angka_acak = int(rand * 100)
-                    if angka_acak == 0:
-                        angka_acak = 1
-
-                    if angka_acak in used_randoms:
-                        continue  # Lewati duplikat
-                    used_randoms.add(angka_acak)
-
-                    jumlah_pengunjung = None
-                    for _, freq_row in freq_table.iterrows():
-                        low, high = map(int, freq_row["Interval Angka Acak"].split(' - '))
+                    if angka_acak == 0: angka_acak = 1
+                    for _, row in freq_table.iterrows():
+                        low, high = map(int, row["Interval Angka Acak"].split(' - '))
                         if low <= angka_acak <= high:
-                            jumlah_low, jumlah_high = map(int, freq_row["Interval Jumlah"].split(' - '))
-                            jumlah_pengunjung = random.randint(jumlah_low, jumlah_high)
-                            break
+                            jumlah_low, jumlah_high = map(int, row["Interval Jumlah"].split(' - '))
+                            return random.randint(jumlah_low, jumlah_high), angka_acak
+                    return None, angka_acak
 
-                    if jumlah_pengunjung is not None:
-                        sim_results.append({
-                            "Percobaan": row["i"],
-                            "Bilangan Acak": angka_acak,
-                            "Jumlah Pengunjung": jumlah_pengunjung
-                        })
+                sim_results = []
+                for _, row in rng_df.iterrows():
+                    val, acak = get_simulated_value(row["Uᵢ"], freq_table)
+                    sim_results.append({"Percobaan": row["i"], "Bilangan Acak": acak, "Jumlah Pengunjung": val})
 
                 st.subheader("Hasil Simulasi")
                 sim_df = pd.DataFrame(sim_results)
