@@ -139,11 +139,10 @@ elif menu == "📈 Frekuensi dan Interval":
             kelas = pd.cut(data, bins=cut_bins, labels=labels, include_lowest=True, right=True)
             freq_table = kelas.value_counts().sort_index().reset_index()
             freq_table.columns = ["Interval Jumlah", "Frekuensi"]
-            freq_table = freq_table[freq_table["Frekuensi"] > 0].reset_index(drop=True)
 
-            # Hitung titik tengah (integer)
+            # Hitung titik tengah (dengan koma)
             bounds = freq_table["Interval Jumlah"].str.split(" - ", expand=True).astype(int)
-            freq_table["Titik Tengah"] = (bounds[0] + bounds[1]) / 2
+            freq_table["Titik Tengah"] = ((bounds[0] + bounds[1]) / 2).round(2)
 
             # Hitung probabilitas
             total = freq_table["Frekuensi"].sum()
