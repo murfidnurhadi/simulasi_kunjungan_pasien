@@ -29,13 +29,17 @@ excel_path = os.path.join(BASE_DIR, "dataset", "dataset.xlsx")
 @st.cache_data
 def load_excel():
     if os.path.exists(excel_path):
-        return pd.read_excel(excel_path, sheet_name="DataTrain")
+        df = pd.read_excel(excel_path, sheet_name="DataTrain")
     else:
         st.warning("⚠ File Excel tidak ditemukan. Upload file .xlsx.")
         uploaded_file = st.file_uploader("Upload file Excel (.xlsx)", type=["xlsx"])
         if uploaded_file:
-            return pd.read_excel(uploaded_file, sheet_name="DataTrain")
-    return pd.DataFrame()
+            df = pd.read_excel(uploaded_file, sheet_name="DataTrain")
+        else:
+            return pd.DataFrame()
+    # Hapus kolom kosong (biasanya unnamed)
+    df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
+    return df
 
 df = load_excel()
 
@@ -81,7 +85,9 @@ if menu == "🏠 Dashboard":
 elif menu == "📊 Data Train":
     st.title("📊 Data Train Pengunjung")
     if not df.empty:
-        st.dataframe(df.reset_index(drop=True), use_container_width=True, hide_index=True)
+        # Hapus kolom kosong (unnamed) dan reset index
+        df_cleaned = df.loc[:, ~df.columns.str.contains('^Unnamed')].reset_index(drop=True)
+        st.dataframe(df_cleaned, use_container_width=True, hide_index=True)
     else:
         st.warning("Data tidak tersedia.")
 
@@ -118,6 +124,10 @@ elif menu == "📈 Frekuensi dan Interval":
             kelas = pd.cut(data, bins=cut_bins, labels=labels, include_lowest=True, right=True)
             freq_table = kelas.value_counts().sort_index().reset_index()
             freq_table.columns = ["Interval Jumlah", "Frekuensi"]
+
+            # Hitung Titik Tengah
+            bounds = freq_table["Interval Jumlah"].str.split(" - ", expand=True).astype(int)
+            freq_table.insert(2, "Titik Tengah", ((bounds[0] + bounds[1]) / 2).round(2))
 
             # Probabilitas & kumulatif
             prob_raw = freq_table["Frekuensi"] / n
