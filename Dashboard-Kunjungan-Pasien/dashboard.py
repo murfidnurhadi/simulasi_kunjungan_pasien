@@ -217,6 +217,9 @@ elif menu == "🔢 RNG LCG":
         with col3:
             st.metric("Jumlah Duplikat", n_gen - len(set(all_zi)))
 
+# ========================
+# 🎲 Simulasi Monte Carlo
+# ========================
 elif menu == "🎲 Simulasi":
     st.title("🎲 Simulasi Monte Carlo")
 
@@ -283,21 +286,30 @@ elif menu == "🎲 Simulasi":
 
                 # Simulasi Monte Carlo
                 def get_simulated_value(rand, freq_table):
-                    angka_acak = int(rand * 100)
-                    if angka_acak == 0: angka_acak = 1
+                    angka_acak = rand * 100  # Ambil dari Uᵢ * 100
                     for _, row in freq_table.iterrows():
                         low, high = map(int, row["Interval Angka Acak"].split(' - '))
                         if low <= angka_acak <= high:
                             jumlah_low, jumlah_high = map(int, row["Interval Jumlah"].split(' - '))
-                            return random.randint(jumlah_low, jumlah_high), angka_acak
+                            titik_tengah = (jumlah_low + jumlah_high) / 2  # Ambil titik tengah
+                            return titik_tengah, angka_acak
                     return None, angka_acak
 
                 sim_results = []
                 for _, row in rng_df.iterrows():
                     val, acak = get_simulated_value(row["Uᵢ"], freq_table)
-                    sim_results.append({"Percobaan": row["i"], "Bilangan Acak": acak, "Jumlah Pengunjung": val})
+                    sim_results.append({"Percobaan": row["i"], "Angka Acak": round(acak, 2), "Jumlah Pengunjung": val})
 
                 sim_df = pd.DataFrame(sim_results)
+
+                # Tambahkan kolom Selisih, Tren, Perubahan %
+                sim_df["Selisih"] = sim_df["Jumlah Pengunjung"].diff().fillna(0)
+                sim_df["Tren"] = sim_df["Selisih"].apply(lambda x: "Naik" if x > 0 else ("Turun" if x < 0 else "Stabil"))
+                sim_df["Perubahan (%)"] = sim_df.apply(
+                    lambda row: 0 if row["Percobaan"] == 1 else (row["Selisih"] / (row["Jumlah Pengunjung"] - row["Selisih"])) * 100,
+                    axis=1
+                )
+                sim_df["Perubahan (%)"] = sim_df["Perubahan (%)"].round(2)
 
                 # Hasil Simulasi
                 st.subheader("Hasil Simulasi")
@@ -308,13 +320,3 @@ elif menu == "🎲 Simulasi":
 
                 st.markdown(f"**Total Simulasi:** {total_sim}")
                 st.markdown(f"**Rata-rata:** {avg_sim:.2f}")
-
-                # Visualisasi
-                fig2 = px.bar(sim_df, x="Percobaan", y="Jumlah Pengunjung", text="Jumlah Pengunjung",
-                              title=f"Hasil Simulasi Monte Carlo - {selected_daerah.capitalize()}",
-                              color="Jumlah Pengunjung", color_continuous_scale="Blues")
-                fig2.update_traces(textposition="outside")
-                st.plotly_chart(fig2, use_container_width=True)
-
-        else:
-            st.warning("Data Excel belum tersedia.")
