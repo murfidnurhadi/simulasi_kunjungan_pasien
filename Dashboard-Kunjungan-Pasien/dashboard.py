@@ -30,8 +30,6 @@ excel_path = os.path.join(BASE_DIR, "dataset", "dataset.xlsx")
 def load_excel():
     if os.path.exists(excel_path):
         df = pd.read_excel(excel_path, sheet_name="DataTrain")
-        df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
-
     else:
         st.warning("⚠ File Excel tidak ditemukan. Upload file .xlsx.")
         uploaded_file = st.file_uploader("Upload file Excel (.xlsx)", type=["xlsx"])
@@ -98,10 +96,12 @@ elif menu == "📊 Data Train":
 elif menu == "📈 Frekuensi dan Interval":
     st.title("📈 Distribusi Frekuensi dan Interval")
     if not df.empty:
+        # Normalisasi nama kolom
         df.columns = df.columns.str.strip().str.lower()
         exclude_cols = ["id", "bulan", "tahun"]
         daerah_cols = [col for col in df.columns if col not in exclude_cols]
 
+        # Pilih daerah
         selected_daerah = st.selectbox("📍 Pilih Daerah:", ["Pilih daerah"] + daerah_cols)
         if selected_daerah != "Pilih daerah":
             data = df[selected_daerah].dropna()
@@ -126,7 +126,7 @@ elif menu == "📈 Frekuensi dan Interval":
             freq_table = kelas.value_counts().sort_index().reset_index()
             freq_table.columns = ["Interval Jumlah", "Frekuensi"]
 
-            # ✅ Tambah Titik Tengah
+            # ✅ Titik Tengah
             bounds = freq_table["Interval Jumlah"].str.split(" - ", expand=True).astype(int)
             freq_table["Titik Tengah"] = ((bounds[0] + bounds[1]) / 2).round(0).astype(int)
 
@@ -147,10 +147,13 @@ elif menu == "📈 Frekuensi dan Interval":
             lower_bounds = [1] + [ub + 1 for ub in upper_bounds[:-1]]
             freq_table["Interval Angka Acak"] = [f"{lb} - {ub}" for lb, ub in zip(lower_bounds, upper_bounds)]
 
-            # ✅ Format angka
+            # ✅ Format angka Titik Tengah
             freq_table["Titik Tengah"] = freq_table["Titik Tengah"].apply(lambda x: f"{x:,}".replace(",", "."))
 
-            st.dataframe(freq_table, use_container_width=True)
+            # ✅ Hapus kolom kosong otomatis Streamlit
+            st.dataframe(freq_table.reset_index(drop=True), use_container_width=True)
+
+            # Simpan ke session_state untuk dipakai di simulasi
             st.session_state['freq_table'] = freq_table
 
             # Info tambahan
@@ -165,7 +168,7 @@ elif menu == "📈 Frekuensi dan Interval":
             col6.metric("Jumlah Data (n)", n)
     else:
         st.warning("Data tidak tersedia.")
-
+        
 # ========================
 # 🔢 RNG LCG
 # ========================
