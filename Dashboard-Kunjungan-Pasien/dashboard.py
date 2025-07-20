@@ -204,7 +204,7 @@ elif menu == "🔢 RNG LCG":
             "Uᵢ": [round(val / m, 4) for val in rng_values]
         })
         st.session_state['rng_df'] = rng_df
-        st.dataframe(rng_df, use_container_width=True, hide_index=True) 
+        st.dataframe(rng_df, use_container_width=True)
 
 # ========================
 # 🎲 Simulasi Monte Carlo
@@ -216,7 +216,7 @@ elif menu == "🎲 Simulasi":
     else:
         rng_df = st.session_state['rng_df']
         st.subheader("Bilangan Acak:")
-        st.dataframe(rng_df, use_container_width=True, hide_index=True)
+        st.dataframe(rng_df, use_container_width=True)
 
         if not df.empty:
             df.columns = df.columns.str.strip().str.lower()
@@ -263,7 +263,7 @@ elif menu == "🎲 Simulasi":
                 freq_table["Interval Angka Acak"] = [f"{lb} - {ub}" for lb, ub in zip(lower_bounds, upper_bounds)]
 
                 st.subheader("Tabel Distribusi")
-                st.dataframe(freq_table, use_container_width=True, hide_index=True)
+                st.dataframe(freq_table, use_container_width=True)
 
                 # Simulasi
                 def get_simulated_value(rand, freq_table):
@@ -283,7 +283,7 @@ elif menu == "🎲 Simulasi":
 
                 st.subheader("Hasil Simulasi")
                 sim_df = pd.DataFrame(sim_results)
-                st.dataframe(sim_df, use_container_width=True, hide_index=True)
+                st.dataframe(sim_df, use_container_width=True)
 
                 st.markdown(f"**Total Simulasi:** {sim_df['Jumlah Pengunjung'].sum()}")
                 st.markdown(f"**Rata-rata:** {sim_df['Jumlah Pengunjung'].mean():.2f}")
