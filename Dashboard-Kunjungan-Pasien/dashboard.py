@@ -179,17 +179,20 @@ elif menu == "🔢 RNG LCG":
             ui = zi / m
             angka_acak = int(ui * 100)
 
+            # Simpan ke tabel dengan Zᵢ₋₁ dikurangi 1
+            zi_minus_1_display = zi_minus_1 - 1
+
             # Cek duplikat
             if zi in all_zi:
                 duplicate_flag = True
             all_zi.append(zi)
 
-            rng_data.append((i, zi_minus_1, zi, round(ui, 4), angka_acak))
+            rng_data.append((i, zi_minus_1_display, zi, round(ui, 4), angka_acak))
 
         # Buat DataFrame
         rng_df = pd.DataFrame(
             rng_data,
-            columns=["i", "Zᵢ₋₁", "Zᵢ", "Uᵢ", "Angka Acak (Uᵢ×100)"]
+            columns=["i", "Zᵢ₋₁ (display)", "Zᵢ", "Uᵢ", "Angka Acak (Uᵢ×100)"]
         )
 
         st.session_state['rng_df'] = rng_df
