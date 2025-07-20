@@ -217,49 +217,104 @@ elif menu == "🔢 RNG LCG":
         with col3:
             st.metric("Jumlah Duplikat", n_gen - len(set(all_zi)))
 
-# ========================
-# 🎲 Simulasi Monte Carlo
-# ========================
 elif menu == "🎲 Simulasi":
     st.title("🎲 Simulasi Monte Carlo")
-    if 'rng_df' not in st.session_state or 'freq_table' not in st.session_state:
-        st.warning("Generate bilangan acak & buat tabel distribusi dulu.")
+
+    if 'rng_df' not in st.session_state:
+        st.warning("Generate bilangan acak dulu di menu RNG LCG.")
     else:
         rng_df = st.session_state['rng_df']
-        freq_table = st.session_state['freq_table']
 
-        st.subheader("Bilangan Acak:")
-        st.dataframe(rng_df, use_container_width=True)
+        if not df.empty:
+            # Pilih daerah
+            df.columns = df.columns.str.strip().str.lower()
+            exclude_cols = ["id", "bulan", "tahun"]
+            daerah_cols = [col for col in df.columns if col not in exclude_cols]
+            selected_daerah = st.selectbox("📍 Pilih Daerah:", ["Pilih daerah"] + daerah_cols)
 
-        # Simulasi
-        def get_simulated_value(rand, freq_table):
-            angka_acak = int(rand * 100)
-            if angka_acak == 0: angka_acak = 1
-            for _, row in freq_table.iterrows():
-                low, high = map(int, row["Interval Angka Acak"].split(' - '))
-                if low <= angka_acak <= high:
-                    jumlah_low, jumlah_high = map(int, row["Interval Jumlah"].split(' - '))
-                    return random.randint(jumlah_low, jumlah_high), angka_acak
-            return None, angka_acak
+            if selected_daerah != "Pilih daerah":
+                # Ambil data sesuai daerah
+                data = df[selected_daerah].dropna()
+                n = len(data)
 
-        sim_results = []
-        for _, row in rng_df.iterrows():
-            val, acak = get_simulated_value(row["Uᵢ"], freq_table)
-            sim_results.append({"Percobaan": row["i"], "Bilangan Acak": acak, "Jumlah Pengunjung": val})
+                # Hitung interval
+                x_min, x_max = data.min(), data.max()
+                R = x_max - x_min
+                k = math.ceil(1 + 3.3 * math.log10(n))
+                h = math.ceil(R / k)
 
-        sim_df = pd.DataFrame(sim_results)
+                # Buat interval
+                lower = math.floor(x_min)
+                bins = []
+                for _ in range(k):
+                    upper = lower + h
+                    bins.append((lower, upper))
+                    lower = upper + 1
 
-        st.subheader("Hasil Simulasi")
-        st.dataframe(sim_df, use_container_width=True)
+                labels = [f"{low} - {high}" for low, high in bins]
+                cut_bins = [b[0] for b in bins] + [bins[-1][1]]
+                kelas = pd.cut(data, bins=cut_bins, labels=labels, include_lowest=True, right=True)
+                freq_table = kelas.value_counts().sort_index().reset_index()
+                freq_table.columns = ["Interval Jumlah", "Frekuensi"]
+                freq_table = freq_table[freq_table["Frekuensi"] > 0].reset_index(drop=True)
 
-        total = sim_df['Jumlah Pengunjung'].sum()
-        avg = sim_df['Jumlah Pengunjung'].mean()
+                # Hitung probabilitas
+                total = freq_table["Frekuensi"].sum()
+                prob_raw = freq_table["Frekuensi"] / total
+                prob_rounded = prob_raw.round(2)
+                selisih = 1.00 - prob_rounded.sum()
+                if abs(selisih) > 0:
+                    idx_max = prob_rounded.idxmax()
+                    prob_rounded.iloc[idx_max] += selisih
 
-        st.markdown(f"**Total Simulasi:** {total}")
-        st.markdown(f"**Rata-rata:** {avg:.2f}")
+                freq_table["Probabilitas"] = prob_rounded
+                freq_table["Prob. Kumulatif"] = freq_table["Probabilitas"].cumsum().round(2)
+                freq_table["P.K * 100"] = (freq_table["Prob. Kumulatif"] * 100).astype(int)
 
-        # Visualisasi hasil simulasi
-        fig2 = px.bar(sim_df, x="Percobaan", y="Jumlah Pengunjung", text="Jumlah Pengunjung",
-                      title="Hasil Simulasi Monte Carlo", color="Jumlah Pengunjung", color_continuous_scale="Blues")
-        fig2.update_traces(textposition="outside")
-        st.plotly_chart(fig2, use_container_width=True)
+                upper_bounds = freq_table["P.K * 100"]
+                lower_bounds = [1] + [ub + 1 for ub in upper_bounds[:-1]]
+                freq_table["Interval Angka Acak"] = [f"{lb} - {ub}" for lb, ub in zip(lower_bounds, upper_bounds)]
+
+                st.session_state['freq_table'] = freq_table
+
+                # Tampilkan tabel distribusi
+                st.subheader(f"Tabel Distribusi - {selected_daerah.capitalize()}")
+                st.dataframe(freq_table, use_container_width=True)
+
+                # Simulasi Monte Carlo
+                def get_simulated_value(rand, freq_table):
+                    angka_acak = int(rand * 100)
+                    if angka_acak == 0: angka_acak = 1
+                    for _, row in freq_table.iterrows():
+                        low, high = map(int, row["Interval Angka Acak"].split(' - '))
+                        if low <= angka_acak <= high:
+                            jumlah_low, jumlah_high = map(int, row["Interval Jumlah"].split(' - '))
+                            return random.randint(jumlah_low, jumlah_high), angka_acak
+                    return None, angka_acak
+
+                sim_results = []
+                for _, row in rng_df.iterrows():
+                    val, acak = get_simulated_value(row["Uᵢ"], freq_table)
+                    sim_results.append({"Percobaan": row["i"], "Bilangan Acak": acak, "Jumlah Pengunjung": val})
+
+                sim_df = pd.DataFrame(sim_results)
+
+                # Hasil Simulasi
+                st.subheader("Hasil Simulasi")
+                st.dataframe(sim_df, use_container_width=True)
+
+                total_sim = sim_df['Jumlah Pengunjung'].sum()
+                avg_sim = sim_df['Jumlah Pengunjung'].mean()
+
+                st.markdown(f"**Total Simulasi:** {total_sim}")
+                st.markdown(f"**Rata-rata:** {avg_sim:.2f}")
+
+                # Visualisasi
+                fig2 = px.bar(sim_df, x="Percobaan", y="Jumlah Pengunjung", text="Jumlah Pengunjung",
+                              title=f"Hasil Simulasi Monte Carlo - {selected_daerah.capitalize()}",
+                              color="Jumlah Pengunjung", color_continuous_scale="Blues")
+                fig2.update_traces(textposition="outside")
+                st.plotly_chart(fig2, use_container_width=True)
+
+        else:
+            st.warning("Data Excel belum tersedia.")
