@@ -217,9 +217,6 @@ elif menu == "🔢 RNG LCG":
         with col3:
             st.metric("Jumlah Duplikat", n_gen - len(set(all_zi)))
 
-# ========================
-# 🎲 Simulasi Monte Carlo
-# ========================
 elif menu == "🎲 Simulasi":
     st.title("🎲 Simulasi Monte Carlo")
 
@@ -236,7 +233,6 @@ elif menu == "🎲 Simulasi":
             selected_daerah = st.selectbox("📍 Pilih Daerah:", ["Pilih daerah"] + daerah_cols)
 
             if selected_daerah != "Pilih daerah":
-                # Ambil data sesuai daerah
                 data = df[selected_daerah].dropna()
                 n = len(data)
 
@@ -246,7 +242,7 @@ elif menu == "🎲 Simulasi":
                 k = math.ceil(1 + 3.3 * math.log10(n))
                 h = math.ceil(R / k)
 
-                # Buat interval
+                # Buat interval (semua interval wajib muncul)
                 lower = math.floor(x_min)
                 bins = []
                 for _ in range(k):
@@ -256,12 +252,13 @@ elif menu == "🎲 Simulasi":
 
                 labels = [f"{low} - {high}" for low, high in bins]
                 cut_bins = [b[0] for b in bins] + [bins[-1][1]]
-                kelas = pd.cut(data, bins=cut_bins, labels=labels, include_lowest=True, right=True)
-                freq_table = kelas.value_counts().sort_index().reset_index()
-                freq_table.columns = ["Interval Jumlah", "Frekuensi"]
-                freq_table = freq_table[freq_table["Frekuensi"] > 0].reset_index(drop=True)
 
-                # Tambah Titik Tengah
+                # Frekuensi (include interval dengan 0)
+                freq_series = pd.cut(data, bins=cut_bins, labels=labels, include_lowest=True, right=True)
+                freq_table = freq_series.value_counts().sort_index().reset_index()
+                freq_table.columns = ["Interval Jumlah", "Frekuensi"]
+
+                # Tambahkan Titik Tengah
                 bounds = freq_table["Interval Jumlah"].str.split(" - ", expand=True).astype(int)
                 freq_table["Titik Tengah"] = ((bounds[0] + bounds[1]) / 2).round(2)
 
@@ -282,18 +279,18 @@ elif menu == "🎲 Simulasi":
                 lower_bounds = [1] + [ub + 1 for ub in upper_bounds[:-1]]
                 freq_table["Interval Angka Acak"] = [f"{lb} - {ub}" for lb, ub in zip(lower_bounds, upper_bounds)]
 
-                # Tambahkan nomor urut
+                # Nomor urut
                 freq_table.insert(0, "No", range(1, len(freq_table) + 1))
 
                 st.session_state['freq_table'] = freq_table
 
-                # Tampilkan tabel distribusi
+                # Tampilkan tabel distribusi lengkap (frekuensi 0 tetap tampil)
                 st.subheader(f"Tabel Distribusi - {selected_daerah.capitalize()}")
                 st.dataframe(freq_table, use_container_width=True)
 
-                # Simulasi Monte Carlo
+                # SIMULASI MONTE CARLO
                 def get_simulated_value(rand, freq_table):
-                    angka_acak = rand * 100  # Ambil dari Uᵢ * 100
+                    angka_acak = rand * 100
                     for _, row in freq_table.iterrows():
                         low, high = map(int, row["Interval Angka Acak"].split(' - '))
                         if low <= angka_acak <= high:
@@ -326,7 +323,7 @@ elif menu == "🎲 Simulasi":
                 st.markdown(f"**Total Simulasi:** {total_sim}")
                 st.markdown(f"**Rata-rata:** {avg_sim:.2f}")
 
-                # Diagram Batang untuk hasil simulasi
+                # Diagram Batang tetap ditampilkan
                 st.subheader("📊 Visualisasi Hasil Simulasi")
                 fig2 = px.bar(sim_df, x="Percobaan", y="Jumlah Pengunjung", text="Jumlah Pengunjung",
                               title=f"Hasil Simulasi Monte Carlo - {selected_daerah.capitalize()}",
