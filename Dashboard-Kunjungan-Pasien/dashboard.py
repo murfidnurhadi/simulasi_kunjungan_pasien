@@ -173,7 +173,7 @@ elif menu == "📈 Frekuensi dan Interval":
             col3.metric("Jangkauan (R)", f"{R}")
             col4.metric("Jumlah Kelas (k)", f"{k}")
             col5.metric("Panjang Kelas (h)", f"{h}")
-            col6.markdown(f"**Jumlah Data (n):** {n}")
+            col6.metric(f"**Jumlah Data (n):** {n}")
     else:
         st.warning("Data tidak tersedia.")
 
