@@ -106,19 +106,24 @@ elif menu == "📊 Data Train":
 elif menu == "📈 Frekuensi dan Interval":
     st.title("📈 Frekuensi dan Interval")
     if not df.empty:
+        # Normalisasi nama kolom
         df.columns = df.columns.str.strip().str.lower()
         exclude_cols = ["id", "bulan", "tahun"]
         daerah_cols = [col for col in df.columns if col not in exclude_cols]
 
+        # Pilih daerah
         selected_daerah = st.selectbox("📍 Pilih Daerah:", ["Pilih daerah"] + daerah_cols)
         if selected_daerah != "Pilih daerah":
             data = df[selected_daerah].dropna()
             n = len(data)
+
+            # Hitung nilai dasar
             x_min, x_max = data.min(), data.max()
             R = x_max - x_min
-            k = math.ceil(1 + 3.3 * math.log10(n))
-            h = math.ceil(R / k)
+            k = math.ceil(1 + 3.3 * math.log10(n))  # jumlah kelas
+            h = int(R / k)  # interval (pembulatan ke bawah agar sesuai Excel)
 
+            # Buat interval kelas
             lower = math.floor(x_min)
             bins = []
             for _ in range(k):
@@ -126,16 +131,21 @@ elif menu == "📈 Frekuensi dan Interval":
                 bins.append((lower, upper))
                 lower = upper + 1
 
+            # Label interval
             labels = [f"{low} - {high}" for low, high in bins]
             cut_bins = [b[0] for b in bins] + [bins[-1][1]]
 
+            # Kelompokkan data ke interval
             kelas = pd.cut(data, bins=cut_bins, labels=labels, include_lowest=True, right=True)
             freq_table = kelas.value_counts().sort_index().reset_index()
             freq_table.columns = ["Interval Jumlah", "Frekuensi"]
             freq_table = freq_table[freq_table["Frekuensi"] > 0].reset_index(drop=True)
+
+            # Hitung titik tengah (integer)
             bounds = freq_table["Interval Jumlah"].str.split(" - ", expand=True).astype(int)
             freq_table["Titik Tengah"] = (bounds[0] + bounds[1]) / 2
 
+            # Hitung probabilitas
             total = freq_table["Frekuensi"].sum()
             prob_raw = freq_table["Frekuensi"] / total
             prob_rounded = prob_raw.round(2)
@@ -147,12 +157,15 @@ elif menu == "📈 Frekuensi dan Interval":
             freq_table["Probabilitas"] = prob_rounded
             freq_table["Prob. Kumulatif"] = freq_table["Probabilitas"].cumsum().round(2)
             freq_table["P.K * 100"] = (freq_table["Prob. Kumulatif"] * 100).astype(int)
+
+            # Interval angka acak
             upper_bounds = freq_table["P.K * 100"]
             lower_bounds = [1] + [ub + 1 for ub in upper_bounds[:-1]]
             freq_table["Interval Angka Acak"] = [f"{lb} - {ub}" for lb, ub in zip(lower_bounds, upper_bounds)]
 
+            # Tampilkan hasil
             st.dataframe(freq_table, use_container_width=True, hide_index=True)
-            st.markdown(f"Jumlah Data: {n} | R: {R} | k: {k} | h: {h}")
+            st.markdown(f"**Jumlah Data:** {n} | **R:** {R} | **k:** {k} | **h:** {h}")
     else:
         st.warning("Data tidak tersedia.")
 
