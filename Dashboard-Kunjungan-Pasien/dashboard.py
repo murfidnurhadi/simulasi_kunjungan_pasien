@@ -55,9 +55,9 @@ if menu == "🏠 Dashboard":
         total_seluruh = total_per_wilayah.sum()
 
         col1, col2, col3 = st.columns(3)
-        col1.metric("Total Pengunjung", f"{total_seluruh:,}")
-        col2.metric("Wilayah Terbanyak", total_per_wilayah.idxmax(), f"{total_per_wilayah.max():,}")
-        col3.metric("Wilayah Tersedikit", total_per_wilayah.idxmin(), f"{total_per_wilayah.min():,}")
+        col1.metric("Total Pengunjung", f"{total_seluruh:,}".replace(",", "."))
+        col2.metric("Wilayah Terbanyak", total_per_wilayah.idxmax(), f"{total_per_wilayah.max():,}".replace(",", "."))
+        col3.metric("Wilayah Tersedikit", total_per_wilayah.idxmin(), f"{total_per_wilayah.min():,}".replace(",", "."))
 
         grafik_df = total_per_wilayah.reset_index()
         grafik_df.columns = ["Wilayah", "Total_Pengunjung"]
@@ -120,6 +120,10 @@ elif menu == "📈 Frekuensi dan Interval":
             freq_table = kelas.value_counts().sort_index().reset_index()
             freq_table.columns = ["Interval Jumlah", "Frekuensi"]
 
+            # Tambah Titik Tengah
+            bounds = freq_table["Interval Jumlah"].str.split(" - ", expand=True).astype(int)
+            freq_table["Titik Tengah"] = ((bounds[0] + bounds[1]) / 2).round(2)
+
             # Probabilitas & kumulatif
             prob_raw = freq_table["Frekuensi"] / n
             prob_rounded = prob_raw.round(2)
@@ -178,8 +182,6 @@ elif menu == "🔢 RNG LCG":
             zi = (a * zi_minus_1 + c) % m
             ui = zi / m
             angka_acak = int(ui * 100)
-
-            # Zᵢ₋₁ untuk tampilan dikurangi 1
             zi_minus_1_display = zi_minus_1 - 1
 
             if zi in all_zi:
@@ -188,30 +190,22 @@ elif menu == "🔢 RNG LCG":
 
             rng_data.append((i, zi_minus_1_display, zi, round(ui, 4), angka_acak))
 
-        rng_df = pd.DataFrame(
-            rng_data,
-            columns=["i", "Zᵢ₋₁", "Zᵢ", "Uᵢ", "Angka Acak (Uᵢ×100)"]
-        )
-
+        rng_df = pd.DataFrame(rng_data, columns=["i", "Zᵢ₋₁", "Zᵢ", "Uᵢ", "Angka Acak (Uᵢ×100)"])
         st.session_state['rng_df'] = rng_df
 
-        # Tabel hasil
         st.subheader("📊 Hasil RNG LCG")
         st.dataframe(rng_df, use_container_width=True)
 
-        # Info duplikat
         if duplicate_flag:
             st.warning("⚠️ Terdapat nilai Zᵢ yang duplikat.")
         else:
             st.success("✅ Tidak ada duplikat.")
 
-        # Statistik RNG
         st.markdown("### 📈 Statistik RNG")
         col1, col2, col3 = st.columns(3)
         col1.metric("Total Bilangan", n_gen)
         col2.metric("Nilai Unik", len(set(all_zi)))
         col3.metric("Jumlah Duplikat", n_gen - len(set(all_zi)))
-
 
 # ========================
 # 🎲 Simulasi Monte Carlo
@@ -223,25 +217,21 @@ elif menu == "🎲 Simulasi":
         st.warning("Generate bilangan acak dulu di menu RNG LCG.")
     else:
         rng_df = st.session_state['rng_df']
-
         if not df.empty:
             df.columns = df.columns.str.strip().str.lower()
             exclude_cols = ["id", "bulan", "tahun"]
             daerah_cols = [col for col in df.columns if col not in exclude_cols]
-
             selected_daerah = st.selectbox("📍 Pilih Daerah:", ["Pilih daerah"] + daerah_cols)
 
             if selected_daerah != "Pilih daerah":
+                # === Distribusi Frekuensi ===
                 data = df[selected_daerah].dropna()
                 n = len(data)
-
-                # Hitung interval
                 x_min, x_max = data.min(), data.max()
                 R = x_max - x_min
                 k = math.ceil(1 + 3.3 * math.log10(n))
                 h = math.ceil(R / k)
 
-                # Interval
                 lower = math.floor(x_min)
                 bins = []
                 for _ in range(k):
@@ -256,11 +246,9 @@ elif menu == "🎲 Simulasi":
                 freq_table = freq_series.value_counts().sort_index().reset_index()
                 freq_table.columns = ["Interval Jumlah", "Frekuensi"]
 
-                # Tambah Titik Tengah
                 bounds = freq_table["Interval Jumlah"].str.split(" - ", expand=True).astype(int)
                 freq_table["Titik Tengah"] = ((bounds[0] + bounds[1]) / 2).round(2)
 
-                # Probabilitas
                 total = freq_table["Frekuensi"].sum()
                 prob_raw = freq_table["Frekuensi"] / total
                 prob_rounded = prob_raw.round(2)
@@ -277,14 +265,10 @@ elif menu == "🎲 Simulasi":
                 lower_bounds = [1] + [ub + 1 for ub in upper_bounds[:-1]]
                 freq_table["Interval Angka Acak"] = [f"{lb} - {ub}" for lb, ub in zip(lower_bounds, upper_bounds)]
 
-                freq_table.insert(0, "No", range(1, len(freq_table) + 1))
-                st.session_state['freq_table'] = freq_table
-
-                # Tabel Distribusi
                 st.subheader(f"Tabel Distribusi - {selected_daerah.capitalize()}")
                 st.dataframe(freq_table, use_container_width=True)
 
-                # Simulasi Monte Carlo
+                # === Simulasi ===
                 def get_simulated_value(rand, freq_table):
                     angka_acak = int(rand * 100)
                     if angka_acak == 0: angka_acak = 1
@@ -297,39 +281,17 @@ elif menu == "🎲 Simulasi":
                 sim_results = []
                 for _, row in rng_df.iterrows():
                     val, acak = get_simulated_value(row["Uᵢ"], freq_table)
-                    sim_results.append({"Percobaan": row["i"], "Angka Acak": acak, "Jumlah Pengunjung": val})# Analisis hasil simulasi
-tren_counts = sim_df['Tren'].value_counts()
-naik = tren_counts.get('Naik', 0)
-turun = tren_counts.get('Turun', 0)
-stabil = tren_counts.get('Stabil', 0)
-
-max_val = sim_df['Jumlah Pengunjung'].max()
-min_val = sim_df['Jumlah Pengunjung'].min()
-
-st.subheader("📌 Wawasan untuk Pengambil Keputusan")
-st.markdown(f"""
-- **Rata-rata kunjungan:** {int(avg_sim):,} pasien per periode.
-- **Tren dominan:** Naik ({naik} kali), Turun ({turun} kali), Stabil ({stabil} kali).
-- **Rentang kunjungan:** {min_val:,} hingga {max_val:,} pasien.
-- **Interpretasi:** Jika tren dominan naik, perlu persiapan kapasitas lebih besar. 
-  Jika fluktuasi tinggi (selisih > 200), siapkan rencana darurat.
-- **Saran:** 
-    - Rencanakan stok obat dan tenaga medis minimal untuk {int(avg_sim):,} pasien.
-    - Pertimbangkan alokasi tambahan saat prediksi mencapai {max_val:,} pasien.
-""".replace(",", "."))
+                    sim_results.append({"Percobaan": row["i"], "Angka Acak": acak, "Jumlah Pengunjung": val})
 
                 sim_df = pd.DataFrame(sim_results)
-
-                # Tambah Selisih, Tren, Perubahan %
                 sim_df["Selisih"] = sim_df["Jumlah Pengunjung"].diff().fillna(0)
                 sim_df["Tren"] = sim_df["Selisih"].apply(lambda x: "Naik" if x > 0 else ("Turun" if x < 0 else "Stabil"))
                 sim_df["Perubahan (%)"] = sim_df.apply(
-                    lambda row: 0 if row["Percobaan"] == 1 or (row["Jumlah Pengunjung"] - row["Selisih"]) == 0 
+                    lambda row: 0 if row["Percobaan"] == 1 or (row["Jumlah Pengunjung"] - row["Selisih"]) == 0
                     else (row["Selisih"] / (row["Jumlah Pengunjung"] - row["Selisih"])) * 100, axis=1
                 )
                 sim_df["Perubahan (%)"] = sim_df["Perubahan (%)"].round(2)
 
-                # Tampilkan Hasil
                 st.subheader("Hasil Simulasi")
                 st.dataframe(sim_df, use_container_width=True)
 
@@ -339,15 +301,14 @@ st.markdown(f"""
                 st.markdown(f"**Total Pengunjung:** {total_sim:,}".replace(",", "."))
                 st.markdown(f"**Rata-rata Pengunjung:** {avg_sim:,}".replace(",", "."))
 
-                # 🔍 Analisis hasil simulasi
+                # === Wawasan Pengambil Keputusan ===
                 tren_counts = sim_df['Tren'].value_counts()
                 naik = tren_counts.get('Naik', 0)
                 turun = tren_counts.get('Turun', 0)
                 stabil = tren_counts.get('Stabil', 0)
-
                 max_val = sim_df['Jumlah Pengunjung'].max()
                 min_val = sim_df['Jumlah Pengunjung'].min()
-                
+
                 st.subheader("📌 Wawasan untuk Pengambil Keputusan")
                 st.markdown(f"""
                 - **Rata-rata kunjungan:** {avg_sim:,} pasien per periode.
@@ -360,8 +321,7 @@ st.markdown(f"""
                     - Pertimbangkan alokasi tambahan saat prediksi mencapai {max_val:,} pasien.
                 """.replace(",", "."))
 
-
-                # Diagram Garis
+                # === Visualisasi ===
                 st.subheader("📊 Visualisasi Hasil Simulasi")
                 fig2 = px.line(sim_df, x="Percobaan", y="Jumlah Pengunjung", markers=True,
                                title=f"Hasil Simulasi Monte Carlo - {selected_daerah.capitalize()}",
