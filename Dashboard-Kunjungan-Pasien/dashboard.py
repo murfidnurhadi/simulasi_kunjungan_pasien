@@ -6,6 +6,11 @@ import plotly.express as px
 import math
 import random
 import os
+from io import BytesIO
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet
 
 # ========================
 # 🎨 Konfigurasi Halaman
@@ -180,28 +185,134 @@ elif menu == "📈 Frekuensi dan Interval":
 # ========================
 # 🔢 RNG LCG
 # ========================
-elif menu == "🔢 RNG LCG":
-    st.title("🔢 Linear Congruential Generator (LCG)")
+# ==========================================
+# 🟨 HALAMAN: RNG LCG (Lengkap + Export PDF)
+# ==========================================
+elif menu_pilihan == "🔢 RNG LCG":
+    st.title("🔢 Linear Congruential Generator (LCG) - Lengkap PDF")
+
+    # Parameter input
+    a = st.number_input("Multiplier (a)", min_value=1, value=21)
+    c = st.number_input("Increment (c)", min_value=0, value=17)
     m = st.number_input("Modulus (m)", min_value=1, value=100)
-    a = st.number_input("Multiplier (a)", min_value=1, value=5)
-    c = st.number_input("Increment (c)", min_value=0, value=1)
-    x0 = st.number_input("Seed (x₀)", min_value=0, value=1)
-    n_gen = st.number_input("Jumlah Bilangan Acak", min_value=1, value=10)
+    z0 = st.number_input("Seed (Z₀)", min_value=0, value=42)
+    n_gen = st.number_input("Jumlah Bilangan Acak", min_value=1, value=20)
 
-    if st.button("Generate"):
-        rng_values = []
-        xi = x0
-        for _ in range(n_gen):
-            xi = (a * xi + c) % m
-            rng_values.append(xi)
+    if st.button("🎲 Generate"):
+        zi = z0
+        rng_data = []
+        all_zi = []
+        period_found = False
+        period_length = 0
+        duplicate_flag = False
 
-        rng_df = pd.DataFrame({
-            "i": range(1, n_gen + 1),
-            "Xᵢ": rng_values,
-            "Uᵢ": [round(val / m, 4) for val in rng_values]
-        })
-        st.session_state['rng_df'] = rng_df
+        for i in range(1, n_gen + 1):
+            zi_minus_1 = zi
+            zi = (a * zi_minus_1 + c) % m
+            ui = zi / m
+            angka_acak = int(ui * 100)
+
+            # Cek duplikat
+            if zi in all_zi:
+                duplicate_flag = True
+            all_zi.append(zi)
+
+            rng_data.append((i, zi_minus_1, zi, round(ui, 4), angka_acak))
+
+        # Buat DataFrame
+        rng_df = pd.DataFrame(
+            rng_data,
+            columns=["i", "Zᵢ₋₁", "Zᵢ", "Uᵢ", "Angka Acak (Uᵢ×100)"]
+        )
+
         st.dataframe(rng_df, use_container_width=True)
+
+        if duplicate_flag:
+            st.warning("⚠️ Terdapat nilai Zᵢ yang duplikat.")
+        else:
+            st.success("✅ Tidak ada duplikat.")
+
+        # Statistik
+        st.markdown("### 📈 Statistik RNG")
+        st.metric("Total Bilangan", n_gen)
+        st.metric("Nilai Unik", len(set(all_zi)))
+
+        # Visualisasi
+        st.markdown("### 📉 Visualisasi Zᵢ")
+        fig = px.line(rng_df, x="i", y="Zᵢ", title="Perkembangan Nilai Zᵢ", markers=True)
+        st.plotly_chart(fig, use_container_width=True)
+
+        # Ekspor PDF
+        st.markdown("### 💾 Ekspor Hasil ke PDF")
+
+        def create_pdf():
+            buffer = BytesIO()
+            doc = SimpleDocTemplate(buffer, pagesize=letter)
+            styles = getSampleStyleSheet()
+            elements = []
+
+            # Judul
+            elements.append(Paragraph("Hasil RNG LCG", styles["Title"]))
+            elements.append(Spacer(1, 12))
+            elements.append(Paragraph(f"Parameter: a={a}, c={c}, m={m}, Z₀={z0}", styles["Normal"]))
+            elements.append(Spacer(1, 12))
+
+            # Tabel Data
+            data_table = [["i", "Zᵢ₋₁", "Zᵢ", "Uᵢ", "Angka Acak"]]
+            for row in rng_data:
+                data_table.append(list(row))
+
+            table = Table(data_table)
+            table.setStyle(TableStyle([
+                ("BACKGROUND", (0, 0), (-1, 0), colors.grey),
+                ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("GRID", (0, 0), (-1, -1), 1, colors.black)
+            ]))
+            elements.append(table)
+
+            # Info Duplikat
+            elements.append(Spacer(1, 12))
+            if duplicate_flag:
+                elements.append(Paragraph("⚠️ Terdapat nilai Zᵢ yang duplikat.", styles["Normal"]))
+            else:
+                elements.append(Paragraph("✅ Tidak ada nilai Zᵢ yang duplikat.", styles["Normal"]))
+
+            doc.build(elements)
+            pdf = buffer.getvalue()
+            buffer.close()
+            return pdf
+
+        pdf_data = create_pdf()
+        st.download_button(
+            label="📥 Download PDF",
+            data=pdf_data,
+            file_name="hasil_rng_lcg.pdf",
+            mime="application/pdf"
+        )
+
+# elif menu == "🔢 RNG LCG":
+#     st.title("🔢 Linear Congruential Generator (LCG)")
+#     m = st.number_input("Modulus (m)", min_value=1, value=100)
+#     a = st.number_input("Multiplier (a)", min_value=1, value=5)
+#     c = st.number_input("Increment (c)", min_value=0, value=1)
+#     x0 = st.number_input("Seed (x₀)", min_value=0, value=1)
+#     n_gen = st.number_input("Jumlah Bilangan Acak", min_value=1, value=10)
+
+#     if st.button("Generate"):
+#         rng_values = []
+#         xi = x0
+#         for _ in range(n_gen):
+#             xi = (a * xi + c) % m
+#             rng_values.append(xi)
+
+#         rng_df = pd.DataFrame({
+#             "i": range(1, n_gen + 1),
+#             "Xᵢ": rng_values,
+#             "Uᵢ": [round(val / m, 4) for val in rng_values]
+#         })
+#         st.session_state['rng_df'] = rng_df
+#         st.dataframe(rng_df, use_container_width=True)
 
 # ========================
 # 🎲 Simulasi Monte Carlo
