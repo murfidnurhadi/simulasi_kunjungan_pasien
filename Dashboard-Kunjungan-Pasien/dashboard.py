@@ -177,9 +177,6 @@ elif menu == "📈 Frekuensi dan Interval":
     else:
         st.warning("Data tidak tersedia.")
 
-import streamlit as st
-import pandas as pd
-
 # ========================
 # 🔢 RNG LCG
 # ========================
