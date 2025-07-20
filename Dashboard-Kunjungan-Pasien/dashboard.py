@@ -160,6 +160,7 @@ elif menu == "📈 Frekuensi dan Interval":
 elif menu == "🔢 RNG LCG":
     st.title("🔢 RNG LCG (Linear Congruential Generator)")
 
+    # Input parameter
     a = st.number_input("Multiplier (a)", min_value=1, value=21)
     c = st.number_input("Increment (c)", min_value=0, value=17)
     m = st.number_input("Modulus (m)", min_value=1, value=100)
@@ -173,28 +174,31 @@ elif menu == "🔢 RNG LCG":
         duplicate_flag = False
 
         for i in range(1, n_gen + 1):
-            zi = (a * zi + c) % m
+            zi_minus_1 = zi
+            zi = (a * zi_minus_1 + c) % m
             ui = zi / m
             angka_acak = int(ui * 100)
-            rng_data.append((i, zi, round(ui, 4), angka_acak))
-            
-            # zi_minus_1 = zi
-            # zi = (a * zi_minus_1 + c) % m
-            # ui = zi / m
-            # angka_acak = int(ui * 100)
 
-            # if zi in all_zi:
-            #     duplicate_flag = True
-            # all_zi.append(zi)
+            # Cek duplikat
+            if zi in all_zi:
+                duplicate_flag = True
+            all_zi.append(zi)
 
             rng_data.append((i, zi_minus_1, zi, round(ui, 4), angka_acak))
 
-        rng_df = pd.DataFrame(rng_data, columns=["i", "Zᵢ₋₁", "Zᵢ", "Uᵢ", "Angka Acak (Uᵢ×100)"])
+        # Buat DataFrame
+        rng_df = pd.DataFrame(
+            rng_data,
+            columns=["i", "Zᵢ₋₁", "Zᵢ", "Uᵢ", "Angka Acak (Uᵢ×100)"]
+        )
+
         st.session_state['rng_df'] = rng_df
 
+        # Tampilkan tabel
         st.subheader("📊 Hasil RNG LCG")
         st.dataframe(rng_df, use_container_width=True)
 
+        # Info duplikat
         if duplicate_flag:
             st.warning("⚠️ Terdapat nilai Zᵢ yang duplikat.")
         else:
