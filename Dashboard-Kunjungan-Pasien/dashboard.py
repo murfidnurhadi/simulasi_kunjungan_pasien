@@ -314,11 +314,11 @@ elif menu == "🎲 Simulasi":
                 st.subheader("Hasil Simulasi")
                 st.dataframe(sim_df, use_container_width=True)
 
-                total_sim = sim_df['Jumlah Pengunjung'].sum()
-                avg_sim = sim_df['Jumlah Pengunjung'].mean()
+                total_sim = int(round(sim_df['Jumlah Pengunjung'].sum()))
+                avg_sim = int(round(sim_df['Jumlah Pengunjung'].mean()))
 
-                st.markdown(f"**Total Simulasi:** {total_sim}")
-                st.markdown(f"**Rata-rata:** {avg_sim:.2f}")
+                st.markdown(f"**Total Pengunjung:** {total_sim}")
+                st.markdown(f"**Rata-rata Pengunjung:** {avg_sim}")
 
                 # Diagram Garis
                 st.subheader("📊 Visualisasi Hasil Simulasi")
