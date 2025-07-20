@@ -104,7 +104,7 @@ elif menu == "📊 Data Train":
 # 📈 Frekuensi & Interval
 # ========================
 elif menu == "📈 Frekuensi dan Interval":
-    st.title("📊 Distribusi Frekuensi: Kota " + selected_daerah.capitalize())
+    st.title("📈 Frekuensi dan Interval")
 
     if not df.empty:
         df.columns = df.columns.str.strip().str.lower()
@@ -113,6 +113,8 @@ elif menu == "📈 Frekuensi dan Interval":
 
         selected_daerah = st.selectbox("📍 Pilih Daerah:", ["Pilih daerah"] + daerah_cols)
         if selected_daerah != "Pilih daerah":
+            st.title("📊 Distribusi Frekuensi: Kota " + selected_daerah.capitalize())  # dipindahkan ke sini
+
             data = df[selected_daerah].dropna()
             n = len(data)
 
