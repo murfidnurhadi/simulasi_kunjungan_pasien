@@ -182,7 +182,7 @@ elif menu == "📈 Frekuensi dan Interval":
 # ========================
 elif menu == "🔢 RNG LCG":
     st.title("🔢 Linear Congruential Generator (LCG)")
-    m = st.number_input("Modulus (m)", min_value=1, value=100)
+    m = st.number_input("Modulus (m)", min_value=2, value=100)
     a = st.number_input("Multiplier (a)", min_value=1, value=5)
     c = st.number_input("Increment (c)", min_value=0, value=1)
     x0 = st.number_input("Seed (x₀)", min_value=0, value=1)
@@ -190,18 +190,28 @@ elif menu == "🔢 RNG LCG":
 
     if st.button("Generate"):
         rng_values = []
+        seen = set()
         xi = x0
-        for _ in range(n_gen):
+        for i in range(n_gen):
             xi = (a * xi + c) % m
+            if xi in seen:
+                st.warning(f"⚠ Duplikasi terdeteksi di iterasi {i+1}, berhenti generate.")
+                break
+            seen.add(xi)
             rng_values.append(xi)
 
         rng_df = pd.DataFrame({
-            "i": range(1, n_gen + 1),
+            "i": range(1, len(rng_values) + 1),
             "Xᵢ": rng_values,
             "Uᵢ": [round(val / m, 4) for val in rng_values]
         })
+
         st.session_state['rng_df'] = rng_df
         st.dataframe(rng_df, use_container_width=True, hide_index=True)
+
+        if len(rng_values) < n_gen:
+            st.info(f"Hanya {len(rng_values)} bilangan acak unik yang dapat dihasilkan dari parameter ini.")
+
 
 # ========================
 # 🎲 Simulasi Monte Carlo
