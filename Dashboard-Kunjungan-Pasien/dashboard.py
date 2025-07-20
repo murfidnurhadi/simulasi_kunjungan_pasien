@@ -30,7 +30,7 @@ with st.sidebar:
 # 📂 Load Data (DIKUNCI)
 # ========================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-excel_path = os.path.join(BASE_DIR, "dataset", "data-awal.xlsx")
+excel_path = os.path.join(BASE_DIR, "dataset", "dataset.xlsx")
 
 @st.cache_data
 def load_excel():
