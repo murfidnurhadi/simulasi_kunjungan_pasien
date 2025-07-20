@@ -30,6 +30,8 @@ excel_path = os.path.join(BASE_DIR, "dataset", "dataset.xlsx")
 def load_excel():
     if os.path.exists(excel_path):
         df = pd.read_excel(excel_path, sheet_name="DataTrain")
+        df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
+
     else:
         st.warning("⚠ File Excel tidak ditemukan. Upload file .xlsx.")
         uploaded_file = st.file_uploader("Upload file Excel (.xlsx)", type=["xlsx"])
