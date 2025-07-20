@@ -181,58 +181,30 @@ import streamlit as st
 import pandas as pd
 
 # ========================
-# 🔢 RNG LCG Generator
+# 🔢 RNG LCG
 # ========================
 elif menu == "🔢 RNG LCG":
     st.title("🔢 Linear Congruential Generator (LCG)")
-
-    # Input Parameter
-    m = st.number_input("Modulus (m)", min_value=2, value=10140000)
-    a = st.number_input("Multiplier (a)", min_value=1, value=21)
-    c = st.number_input("Increment (c)", min_value=0, value=7)
-    x0 = st.number_input("Seed (Z₀)", min_value=0, value=10123020)
-    n_gen = st.number_input("Jumlah Bilangan Acak", min_value=1, value=48)
-    presisi = st.number_input("Presisi Uᵢ", min_value=4, max_value=12, value=6)
+    m = st.number_input("Modulus (m)", min_value=1, value=100)
+    a = st.number_input("Multiplier (a)", min_value=1, value=5)
+    c = st.number_input("Increment (c)", min_value=0, value=1)
+    x0 = st.number_input("Seed (x₀)", min_value=0, value=1)
+    n_gen = st.number_input("Jumlah Bilangan Acak", min_value=1, value=10)
 
     if st.button("Generate"):
-        zi_values = []
-        ui_values = []
+        rng_values = []
+        xi = x0
+        for _ in range(n_gen):
+            xi = (a * xi + c) % m
+            rng_values.append(xi)
 
-        zi = x0
-        seen_zi = set()
-        attempts = 0
-        max_attempts = m * 2  # Hindari infinite loop
-
-        while len(zi_values) < n_gen and attempts < max_attempts:
-            zi = (a * zi + c) % m
-            attempts += 1
-            if zi not in seen_zi:  # Pastikan Zi unik
-                seen_zi.add(zi)
-                zi_values.append(zi)
-                ui_values.append(round(zi / m, presisi))
-
-        # Buat DataFrame
         rng_df = pd.DataFrame({
-            "i": range(1, len(zi_values) + 1),
-            "Zi": zi_values,
-            "Ui": ui_values
+            "i": range(1, n_gen + 1),
+            "Xᵢ": rng_values,
+            "Uᵢ": [round(val / m, 4) for val in rng_values]
         })
-
         st.session_state['rng_df'] = rng_df
-        st.subheader("Hasil Bilangan Acak:")
-        st.dataframe(rng_df, use_container_width=True, hide_index=True)
-
-        # Info tambahan
-        if len(zi_values) < n_gen:
-            st.warning(f"⚠ Hanya {len(zi_values)} bilangan unik yang dihasilkan (karena modulus terbatas).")
-
-        # Tombol Download Excel
-        excel_data = rng_df.to_excel(index=False)
-        st.download_button(
-            label="📥 Download Hasil ke Excel",
-            data=excel_data,
-            file_name="hasil_rng_lcg.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        st.dataframe(rng_df, use_container_width=True, hide_index=True) 
         )
 
 # ========================
