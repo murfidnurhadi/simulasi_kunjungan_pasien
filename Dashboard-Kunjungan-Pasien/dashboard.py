@@ -177,50 +177,63 @@ elif menu == "📈 Frekuensi dan Interval":
     else:
         st.warning("Data tidak tersedia.")
 
+import streamlit as st
+import pandas as pd
+
 # ========================
-# 🔢 RNG LCG (No Duplicate Xi & Uᵢ)
+# 🔢 RNG LCG Generator
 # ========================
 elif menu == "🔢 RNG LCG":
     st.title("🔢 Linear Congruential Generator (LCG)")
-    m = st.number_input("Modulus (m)", min_value=2, value=100)
-    a = st.number_input("Multiplier (a)", min_value=1, value=5)
-    c = st.number_input("Increment (c)", min_value=0, value=1)
-    x0 = st.number_input("Seed (x₀)", min_value=0, value=1)
-    n_gen = st.number_input("Jumlah Bilangan Acak", min_value=1, value=10)
+
+    # Input Parameter
+    m = st.number_input("Modulus (m)", min_value=2, value=10140000)
+    a = st.number_input("Multiplier (a)", min_value=1, value=21)
+    c = st.number_input("Increment (c)", min_value=0, value=7)
+    x0 = st.number_input("Seed (Z₀)", min_value=0, value=10123020)
+    n_gen = st.number_input("Jumlah Bilangan Acak", min_value=1, value=48)
+    presisi = st.number_input("Presisi Uᵢ", min_value=4, max_value=12, value=6)
 
     if st.button("Generate"):
-        rng_values = []
-        seen_xi = set()
-        xi = x0
+        zi_values = []
+        ui_values = []
+
+        zi = x0
+        seen_zi = set()
         attempts = 0
-        max_attempts = m * 2
+        max_attempts = m * 2  # Hindari infinite loop
 
-        while len(rng_values) < n_gen and attempts < max_attempts:
-            xi = (a * xi + c) % m
+        while len(zi_values) < n_gen and attempts < max_attempts:
+            zi = (a * zi + c) % m
             attempts += 1
-            if xi not in seen_xi:
-                seen_xi.add(xi)
-                rng_values.append(xi)
+            if zi not in seen_zi:  # Pastikan Zi unik
+                seen_zi.add(zi)
+                zi_values.append(zi)
+                ui_values.append(round(zi / m, presisi))
 
-        # Hitung Uᵢ berdasarkan Xi unik
-        u_values = [round(x / m, 4) for x in rng_values]
-
-        # Pastikan tidak ada duplikat Uᵢ karena pembulatan
-        # Jika ada, naikkan presisi
-        if len(set(u_values)) < len(u_values):
-            u_values = [round(x / m, 6) for x in rng_values]
-
+        # Buat DataFrame
         rng_df = pd.DataFrame({
-            "i": range(1, len(rng_values) + 1),
-            "Xᵢ": rng_values,
-            "Uᵢ": u_values
+            "i": range(1, len(zi_values) + 1),
+            "Zi": zi_values,
+            "Ui": ui_values
         })
 
         st.session_state['rng_df'] = rng_df
+        st.subheader("Hasil Bilangan Acak:")
         st.dataframe(rng_df, use_container_width=True, hide_index=True)
 
-        if len(rng_values) < n_gen:
-            st.warning(f"⚠ Hanya {len(rng_values)} bilangan acak unik yang bisa dihasilkan (karena modulus terbatas).")
+        # Info tambahan
+        if len(zi_values) < n_gen:
+            st.warning(f"⚠ Hanya {len(zi_values)} bilangan unik yang dihasilkan (karena modulus terbatas).")
+
+        # Tombol Download Excel
+        excel_data = rng_df.to_excel(index=False)
+        st.download_button(
+            label="📥 Download Hasil ke Excel",
+            data=excel_data,
+            file_name="hasil_rng_lcg.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
 # ========================
 # 🎲 Simulasi Monte Carlo
