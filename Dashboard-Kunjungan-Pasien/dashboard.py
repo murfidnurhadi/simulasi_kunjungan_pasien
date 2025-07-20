@@ -182,14 +182,12 @@ elif menu == "🔢 RNG LCG":
             # Zᵢ₋₁ untuk tampilan dikurangi 1
             zi_minus_1_display = zi_minus_1 - 1
 
-            # Cek duplikat
             if zi in all_zi:
                 duplicate_flag = True
             all_zi.append(zi)
 
             rng_data.append((i, zi_minus_1_display, zi, round(ui, 4), angka_acak))
 
-        # Buat DataFrame
         rng_df = pd.DataFrame(
             rng_data,
             columns=["i", "Zᵢ₋₁", "Zᵢ", "Uᵢ", "Angka Acak (Uᵢ×100)"]
@@ -197,7 +195,7 @@ elif menu == "🔢 RNG LCG":
 
         st.session_state['rng_df'] = rng_df
 
-        # Tampilkan tabel
+        # Tabel hasil
         st.subheader("📊 Hasil RNG LCG")
         st.dataframe(rng_df, use_container_width=True)
 
@@ -210,13 +208,14 @@ elif menu == "🔢 RNG LCG":
         # Statistik RNG
         st.markdown("### 📈 Statistik RNG")
         col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("Total Bilangan", n_gen)
-        with col2:
-            st.metric("Nilai Unik", len(set(all_zi)))
-        with col3:
-            st.metric("Jumlah Duplikat", n_gen - len(set(all_zi)))
+        col1.metric("Total Bilangan", n_gen)
+        col2.metric("Nilai Unik", len(set(all_zi)))
+        col3.metric("Jumlah Duplikat", n_gen - len(set(all_zi)))
 
+
+# ========================
+# 🎲 Simulasi Monte Carlo
+# ========================
 elif menu == "🎲 Simulasi":
     st.title("🎲 Simulasi Monte Carlo")
 
@@ -226,10 +225,10 @@ elif menu == "🎲 Simulasi":
         rng_df = st.session_state['rng_df']
 
         if not df.empty:
-            # Pilih daerah
             df.columns = df.columns.str.strip().str.lower()
             exclude_cols = ["id", "bulan", "tahun"]
             daerah_cols = [col for col in df.columns if col not in exclude_cols]
+
             selected_daerah = st.selectbox("📍 Pilih Daerah:", ["Pilih daerah"] + daerah_cols)
 
             if selected_daerah != "Pilih daerah":
@@ -242,7 +241,7 @@ elif menu == "🎲 Simulasi":
                 k = math.ceil(1 + 3.3 * math.log10(n))
                 h = math.ceil(R / k)
 
-                # Buat interval (semua interval wajib muncul)
+                # Interval
                 lower = math.floor(x_min)
                 bins = []
                 for _ in range(k):
@@ -253,16 +252,15 @@ elif menu == "🎲 Simulasi":
                 labels = [f"{low} - {high}" for low, high in bins]
                 cut_bins = [b[0] for b in bins] + [bins[-1][1]]
 
-                # Frekuensi (include interval dengan 0)
                 freq_series = pd.cut(data, bins=cut_bins, labels=labels, include_lowest=True, right=True)
                 freq_table = freq_series.value_counts().sort_index().reset_index()
                 freq_table.columns = ["Interval Jumlah", "Frekuensi"]
 
-                # Tambahkan Titik Tengah
+                # Tambah Titik Tengah
                 bounds = freq_table["Interval Jumlah"].str.split(" - ", expand=True).astype(int)
                 freq_table["Titik Tengah"] = ((bounds[0] + bounds[1]) / 2).round(2)
 
-                # Hitung probabilitas
+                # Probabilitas
                 total = freq_table["Frekuensi"].sum()
                 prob_raw = freq_table["Frekuensi"] / total
                 prob_rounded = prob_raw.round(2)
@@ -279,41 +277,40 @@ elif menu == "🎲 Simulasi":
                 lower_bounds = [1] + [ub + 1 for ub in upper_bounds[:-1]]
                 freq_table["Interval Angka Acak"] = [f"{lb} - {ub}" for lb, ub in zip(lower_bounds, upper_bounds)]
 
-                # Nomor urut
                 freq_table.insert(0, "No", range(1, len(freq_table) + 1))
-
                 st.session_state['freq_table'] = freq_table
 
-                # Tampilkan tabel distribusi lengkap (frekuensi 0 tetap tampil)
+                # Tabel Distribusi
                 st.subheader(f"Tabel Distribusi - {selected_daerah.capitalize()}")
                 st.dataframe(freq_table, use_container_width=True)
 
-                # SIMULASI MONTE CARLO
+                # Simulasi Monte Carlo
                 def get_simulated_value(rand, freq_table):
-                    angka_acak = rand * 100
+                    angka_acak = int(rand * 100)
+                    if angka_acak == 0: angka_acak = 1
                     for _, row in freq_table.iterrows():
                         low, high = map(int, row["Interval Angka Acak"].split(' - '))
                         if low <= angka_acak <= high:
                             return row["Titik Tengah"], angka_acak
-                    return None, angka_acak
+                    return 0, angka_acak
 
                 sim_results = []
                 for _, row in rng_df.iterrows():
                     val, acak = get_simulated_value(row["Uᵢ"], freq_table)
-                    sim_results.append({"Percobaan": row["i"], "Angka Acak": round(acak, 2), "Jumlah Pengunjung": val})
+                    sim_results.append({"Percobaan": row["i"], "Angka Acak": acak, "Jumlah Pengunjung": val})
 
                 sim_df = pd.DataFrame(sim_results)
 
-                # Tambahkan kolom Selisih, Tren, Perubahan %
+                # Tambah Selisih, Tren, Perubahan %
                 sim_df["Selisih"] = sim_df["Jumlah Pengunjung"].diff().fillna(0)
                 sim_df["Tren"] = sim_df["Selisih"].apply(lambda x: "Naik" if x > 0 else ("Turun" if x < 0 else "Stabil"))
                 sim_df["Perubahan (%)"] = sim_df.apply(
-                    lambda row: 0 if row["Percobaan"] == 1 else (row["Selisih"] / (row["Jumlah Pengunjung"] - row["Selisih"])) * 100,
-                    axis=1
+                    lambda row: 0 if row["Percobaan"] == 1 or (row["Jumlah Pengunjung"] - row["Selisih"]) == 0 
+                    else (row["Selisih"] / (row["Jumlah Pengunjung"] - row["Selisih"])) * 100, axis=1
                 )
                 sim_df["Perubahan (%)"] = sim_df["Perubahan (%)"].round(2)
 
-                # Hasil Simulasi
+                # Tampilkan Hasil
                 st.subheader("Hasil Simulasi")
                 st.dataframe(sim_df, use_container_width=True)
 
@@ -322,15 +319,11 @@ elif menu == "🎲 Simulasi":
 
                 st.markdown(f"**Total Simulasi:** {total_sim}")
                 st.markdown(f"**Rata-rata:** {avg_sim:.2f}")
-                
+
                 # Diagram Garis
                 st.subheader("📊 Visualisasi Hasil Simulasi")
-                fig2 = px.line(
-                sim_df,
-                x="Percobaan",
-                y="Jumlah Pengunjung",
-                markers=True,
-                title=f"Hasil Simulasi Monte Carlo - {selected_daerah.capitalize()}",
-                )
+                fig2 = px.line(sim_df, x="Percobaan", y="Jumlah Pengunjung", markers=True,
+                               title=f"Hasil Simulasi Monte Carlo - {selected_daerah.capitalize()}",
+                               line_shape="linear")
                 fig2.update_traces(line=dict(color='blue', width=3), marker=dict(size=8))
                 st.plotly_chart(fig2, use_container_width=True)
