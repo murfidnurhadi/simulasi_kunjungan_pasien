@@ -174,8 +174,8 @@ elif menu == "🔢 RNG LCG":
     a = st.number_input("Multiplier (a)", min_value=1, value=21)
     c = st.number_input("Increment (c)", min_value=0, value=17)
     m = st.number_input("Modulus (m)", min_value=1, value=100)
-    z0 = st.number_input("Seed (Z₀)", min_value=0, value=42)
-    n_gen = st.number_input("Jumlah Bilangan Acak", min_value=1, value=20)
+    z0 = st.number_input("Seed (Z₀)", min_value=0, value=20)
+    n_gen = st.number_input("Jumlah Bilangan Acak", min_value=1, value=48)
 
     if st.button("🎲 Generate"):
         zi = z0
