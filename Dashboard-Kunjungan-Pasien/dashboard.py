@@ -10,6 +10,13 @@ import plotly.express as px
 # 🎨 Konfigurasi Halaman
 # ========================
 st.set_page_config(layout="wide", page_title="Simulasi Monte Carlo", page_icon="🎲")
+st.markdown("""
+<style>
+    body { background-color: #f9f9f9; }
+    .css-18e3th9 { background-color: white; }
+    h1, h2, h3, h4 { color: #333; }
+</style>
+""", unsafe_allow_html=True)
 
 # ========================
 # 📂 Sidebar Navigasi
@@ -66,8 +73,14 @@ def generate_rng_auto(a=None, c=None, m=None, z0=10123014, n_gen=48):
     rng_df = pd.DataFrame(rng_data, columns=["i", "Zᵢ₋₁", "Zᵢ", "Uᵢ", "Angka Acak (Uᵢ×100)"])
     return rng_df, a, c, m, z0
 
-if 'rng_df' not in st.session_state:
-    st.session_state['rng_df'], st.session_state['a'], st.session_state['c'], st.session_state['m'], st.session_state['z0'] = generate_rng_auto()
+# ✅ Inisialisasi Session State
+if 'a' not in st.session_state or 'rng_df' not in st.session_state:
+    rng_df, a, c, m, z0 = generate_rng_auto()
+    st.session_state['rng_df'] = rng_df
+    st.session_state['a'] = a
+    st.session_state['c'] = c
+    st.session_state['m'] = m
+    st.session_state['z0'] = z0
 
 # ========================
 # 🏠 Dashboard
@@ -198,7 +211,7 @@ elif menu == "🔢 RNG LCG":
     - z₀ = {st.session_state['z0']}  
     """)
 
-    if st.button("🎲 Create Random Number"):
+    if st.button("🎲 Generate Ulang RNG"):
         st.session_state['rng_df'], st.session_state['a'], st.session_state['c'], st.session_state['m'], st.session_state['z0'] = generate_rng_auto()
 
     rng_df = st.session_state['rng_df']
