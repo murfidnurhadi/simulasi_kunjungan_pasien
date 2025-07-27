@@ -54,10 +54,12 @@ df = load_excel()
 # ========================
 # 🔢 RNG LCG AUTO
 # ========================
-def generate_rng_auto(a=None, c=None, m=None, z0=10123014, n_gen=48):
+def generate_rng_auto(a=None, c=None, m=None, z0=None, n_gen=48):
     if a is None: a = random.randint(10, 50)
     if c is None: c = random.randint(1, 30)
     if m is None: m = random.randint(80, 200)
+    if z0 is None: z0 = random.randint(1, 99999999)
+
 
     zi = z0
     rng_data = []
