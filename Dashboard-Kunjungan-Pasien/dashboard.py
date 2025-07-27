@@ -201,7 +201,7 @@ elif menu == "🔢 RNG LCG":
     - **a (Multiplier):** Pengali (acak otomatis)  
     - **c (Increment):** Penambah (acak otomatis)  
     - **m (Modulus):** Batas bilangan (acak otomatis)  
-    - **Z₀ (Seed):** Tetap = 10123014  
+    - **Z₀ (Seed):** Limit = 99999999  
     - **n:** Jumlah bilangan acak = 48  
     """)
 
