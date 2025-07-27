@@ -190,7 +190,7 @@ elif menu == "📈 Frekuensi dan Interval":
         st.warning("Data tidak tersedia.")
 
 # ========================
-# 🎲 Simulasi Monte Carlo (All Wilayah)
+# 🎲 Simulasi Monte Carlo (Semua Wilayah)
 # ========================
 elif menu == "🎲 Simulasi":
     st.title("🎲 Simulasi Monte Carlo - Semua Wilayah")
