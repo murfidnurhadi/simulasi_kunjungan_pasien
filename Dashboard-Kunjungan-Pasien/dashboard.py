@@ -119,61 +119,73 @@ elif menu == "📊 Data Train":
         st.warning("Data tidak tersedia.")
 
 # ========================
-# 📈 Frekuensi & Interval
+# 📈 Frekuensi & Interval (Semua Wilayah)
 # ========================
 elif menu == "📈 Frekuensi dan Interval":
-    st.title("📈 Distribusi Frekuensi dan Interval")
-    st.info("Pilih salah satu daerah untuk melihat distribusi frekuensi.")
+    st.title("📈 Distribusi Frekuensi dan Interval (Semua Wilayah)")
     if not df.empty:
         df.columns = df.columns.str.strip().str.lower()
         exclude_cols = ["id", "bulan", "tahun"]
         daerah_cols = [col for col in df.columns if col not in exclude_cols]
 
-        selected_daerah = st.selectbox("📍 Pilih Daerah:", ["Pilih daerah"] + daerah_cols)
-        if selected_daerah != "Pilih daerah":
-            data = df[selected_daerah].dropna()
-            n = len(data)
-            x_min, x_max = data.min(), data.max()
-            R = x_max - x_min
-            k = math.ceil(1 + 3.3 * math.log10(n))
-            h = math.ceil(R / k)
+        for daerah in daerah_cols:
+            with st.expander(f"📍 Wilayah: {daerah.capitalize()}"):
+                data = df[daerah].dropna()
+                n = len(data)
+                x_min, x_max = data.min(), data.max()
+                R = x_max - x_min
+                k = math.ceil(1 + 3.3 * math.log10(n))
+                h = math.ceil(R / k)
 
-            # Buat interval kelas
-            lower = math.floor(x_min)
-            bins = []
-            for _ in range(k):
-                upper = lower + h
-                bins.append((lower, upper))
-                lower = upper + 1
+                # Buat interval kelas
+                lower = math.floor(x_min)
+                bins = []
+                for _ in range(k):
+                    upper = lower + h
+                    bins.append((lower, upper))
+                    lower = upper + 1
 
-            labels = [f"{low} - {high}" for low, high in bins]
-            cut_bins = [b[0] for b in bins] + [bins[-1][1]]
+                labels = [f"{low} - {high}" for low, high in bins]
+                cut_bins = [b[0] for b in bins] + [bins[-1][1]]
 
-            kelas = pd.cut(data, bins=cut_bins, labels=labels, include_lowest=True, right=True)
-            freq_table = kelas.value_counts().sort_index().reset_index()
-            freq_table.columns = ["Interval Jumlah", "Frekuensi"]
+                kelas = pd.cut(data, bins=cut_bins, labels=labels, include_lowest=True, right=True)
+                freq_table = kelas.value_counts().sort_index().reset_index()
+                freq_table.columns = ["Interval Jumlah", "Frekuensi"]
 
-            # ✅ Tambah Titik Tengah
-            bounds = freq_table["Interval Jumlah"].str.split(" - ", expand=True).astype(int)
-            freq_table["Titik Tengah"] = ((bounds[0] + bounds[1]) / 2).round(0).astype(int)
+                # ✅ Tambah Titik Tengah
+                bounds = freq_table["Interval Jumlah"].str.split(" - ", expand=True).astype(int)
+                freq_table["Titik Tengah"] = ((bounds[0] + bounds[1]) / 2).round(0).astype(int)
 
-            # Probabilitas & kumulatif
-            prob_raw = freq_table["Frekuensi"] / n
-            prob_rounded = prob_raw.round(2)
-            selisih = 1.00 - prob_rounded.sum()
-            if abs(selisih) > 0:
-                idx_max = prob_rounded.idxmax()
-                prob_rounded.iloc[idx_max] += selisih
+                # Probabilitas & kumulatif
+                prob_raw = freq_table["Frekuensi"] / n
+                prob_rounded = prob_raw.round(2)
+                selisih = 1.00 - prob_rounded.sum()
+                if abs(selisih) > 0:
+                    idx_max = prob_rounded.idxmax()
+                    prob_rounded.iloc[idx_max] += selisih
 
-            freq_table["Probabilitas"] = prob_rounded
-            freq_table["Prob. Kumulatif"] = freq_table["Probabilitas"].cumsum().round(2)
-            freq_table["P.K * 100"] = (freq_table["Prob. Kumulatif"] * 100).astype(int)
+                freq_table["Probabilitas"] = prob_rounded
+                freq_table["Prob. Kumulatif"] = freq_table["Probabilitas"].cumsum().round(2)
+                freq_table["P.K * 100"] = (freq_table["Prob. Kumulatif"] * 100).astype(int)
 
-            freq_table["Interval Angka Acak"] = [
-                f"{lb} - {ub}" for lb, ub in zip([1] + [x+1 for x in freq_table["P.K * 100"][:-1]], freq_table["P.K * 100"])
-            ]
+                freq_table["Interval Angka Acak"] = [
+                    f"{lb} - {ub}" for lb, ub in zip([1] + [x+1 for x in freq_table["P.K * 100"][:-1]], freq_table["P.K * 100"])
+                ]
 
-            st.dataframe(freq_table, use_container_width=True)
+                st.dataframe(freq_table, use_container_width=True)
+
+                # Grafik Bar Distribusi
+                fig_bar = px.bar(freq_table, x="Interval Jumlah", y="Frekuensi", text="Frekuensi",
+                                 title=f"Distribusi Frekuensi - {daerah.capitalize()}",
+                                 color="Interval Jumlah")
+                fig_bar.update_traces(textposition="outside")
+                st.plotly_chart(fig_bar, use_container_width=True)
+
+                # Info tambahan
+                st.markdown(f"""
+                **Xmin:** {x_min} | **Xmax:** {x_max} | **Range (R):** {R}  
+                **Kelas (k):** {k} | **Panjang (h):** {h} | **Jumlah Data (n):** {n}
+                """)
     else:
         st.warning("Data tidak tersedia.")
 
