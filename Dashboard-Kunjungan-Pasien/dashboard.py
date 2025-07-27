@@ -18,7 +18,7 @@ with st.sidebar:
     st.title("🧭 Navigasi")
     menu = st.radio(
         "Pilih Halaman:",
-        ["🏠 Dashboard", "📊 Data Train", "📈 Frekuensi dan Interval", "🎲 Simulasi"]
+        ["🏠 Dashboard", "📊 Data Train", "📈 Frekuensi dan Interval", "🔢 RNG LCG", "🎲 Simulasi"]
     )
 
 # ========================
@@ -45,14 +45,14 @@ def load_excel():
 df = load_excel()
 
 # ========================
-# 🔢 RNG LCG Otomatis
+# 🔢 RNG LCG AUTO (Default)
 # ========================
 def generate_rng_auto():
-    a = random.randint(10, 50)      # multiplier
-    c = random.randint(1, 30)       # increment
-    m = random.randint(80, 200)     # modulus
-    z0 = random.randint(1, 50)      # seed
-    n_gen = 48                      # jumlah bilangan
+    a = random.randint(10, 50)
+    c = random.randint(1, 30)
+    m = random.randint(80, 200)
+    z0 = random.randint(1, 50)
+    n_gen = 48
 
     zi = z0
     rng_data = []
@@ -68,7 +68,6 @@ def generate_rng_auto():
     rng_df = pd.DataFrame(rng_data, columns=["i", "Zᵢ₋₁", "Zᵢ", "Uᵢ", "Angka Acak (Uᵢ×100)"])
     return rng_df
 
-# Simpan RNG otomatis sekali
 if 'rng_df' not in st.session_state:
     st.session_state['rng_df'] = generate_rng_auto()
 
@@ -152,11 +151,9 @@ elif menu == "📈 Frekuensi dan Interval":
             freq_table = kelas.value_counts().sort_index().reset_index()
             freq_table.columns = ["Interval Jumlah", "Frekuensi"]
 
-            # ✅ Tambah Titik Tengah
             bounds = freq_table["Interval Jumlah"].str.split(" - ", expand=True).astype(int)
             freq_table["Titik Tengah"] = ((bounds[0] + bounds[1]) / 2).round(0).astype(int)
 
-            # Probabilitas & kumulatif
             prob_raw = freq_table["Frekuensi"] / n
             prob_rounded = prob_raw.round(2)
             selisih = 1.00 - prob_rounded.sum()
@@ -173,17 +170,67 @@ elif menu == "📈 Frekuensi dan Interval":
 
             st.dataframe(freq_table, use_container_width=True)
 
-            # Grafik Bar Distribusi
             fig_bar = px.bar(freq_table, x="Interval Jumlah", y="Frekuensi", text="Frekuensi",
                              title=f"Distribusi Frekuensi - {daerah.capitalize()}",
                              color="Interval Jumlah")
             fig_bar.update_traces(textposition="outside")
             st.plotly_chart(fig_bar, use_container_width=True)
 
-            # Info tambahan
             st.markdown(f"""
             **Xmin:** {x_min} | **Xmax:** {x_max} | **Range (R):** {R}  
             **Kelas (k):** {k} | **Panjang (h):** {h} | **Jumlah Data (n):** {n}
             """)
-    else:
-        st.warning("Data tidak tersedia.")
+
+# ========================
+# 🔢 RNG LCG
+# ========================
+elif menu == "🔢 RNG LCG":
+    st.title("🔢 RNG LCG (Linear Congruential Generator)")
+    st.markdown("""
+    **Apa itu RNG LCG?**  
+    RNG (Random Number Generator) adalah metode untuk menghasilkan bilangan acak.  
+    **LCG (Linear Congruential Generator)** menggunakan rumus:  
+    `Zᵢ = (a * Zᵢ₋₁ + c) mod m`  
+    - **a (Multiplier):** Pengali  
+    - **c (Increment):** Penambah  
+    - **m (Modulus):** Batas bilangan  
+    - **Z₀ (Seed):** Nilai awal  
+    - **n:** Jumlah bilangan acak  
+    """)
+
+    a = st.number_input("Multiplier (a)", min_value=1, value=random.randint(10, 50))
+    c = st.number_input("Increment (c)", min_value=0, value=random.randint(1, 30))
+    m = st.number_input("Modulus (m)", min_value=10, value=random.randint(80, 200))
+    z0 = st.number_input("Seed (Z₀)", min_value=0, value=random.randint(1, 50))
+    n_gen = st.number_input("Jumlah Bilangan Acak", min_value=1, value=48)
+
+    if st.button("🎲 Create Random Number"):
+        zi = z0
+        rng_data = []
+        all_zi = []
+
+        for i in range(1, n_gen + 1):
+            zi_minus_1 = zi
+            zi = (a * zi_minus_1 + c) % m
+            ui = zi / m
+            angka_acak = int(ui * 100)
+            if angka_acak == 0: angka_acak = 1
+            rng_data.append((i, zi_minus_1, zi, round(ui, 4), angka_acak))
+            all_zi.append(zi)
+
+        rng_df = pd.DataFrame(rng_data, columns=["i", "Zᵢ₋₁", "Zᵢ", "Uᵢ", "Angka Acak (Uᵢ×100)"])
+        st.session_state['rng_df'] = rng_df
+
+        st.subheader("📊 Hasil RNG LCG")
+        st.dataframe(rng_df, use_container_width=True)
+
+        duplicate_flag = len(all_zi) != len(set(all_zi))
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Total Bilangan", n_gen)
+        col2.metric("Nilai Unik", len(set(all_zi)))
+        col3.metric("Duplikat", n_gen - len(set(all_zi)))
+
+        if duplicate_flag:
+            st.warning("⚠️ Terdapat nilai Zᵢ yang duplikat.")
+        else:
+            st.success("✅ Tidak ada duplikat.")
