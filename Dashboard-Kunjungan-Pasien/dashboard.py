@@ -241,21 +241,43 @@ elif menu == "🎲 Simulasi":
 
         sim_df = pd.DataFrame(hasil_simulasi)
         sim_df.index = rng_df["i"]
+        st.subheader("📊 Hasil Simulasi Semua Wilayah")
         st.dataframe(sim_df, use_container_width=True)
 
         # Ringkasan rata-rata per daerah
         avg_per_daerah = sim_df.mean().sort_values(ascending=False)
         total_per_daerah = sim_df.sum().sort_values(ascending=False)
 
-        st.subheader("📊 Rata-rata Pengunjung per Wilayah")
-        fig_bar = px.bar(x=avg_per_daerah.index, y=avg_per_daerah.values, color=avg_per_daerah.index,
-                         text=avg_per_daerah.values.round(0),
-                         title="Rata-rata Simulasi Pengunjung per Wilayah")
-        st.plotly_chart(fig_bar, use_container_width=True)
+        st.subheader("📊 Visualisasi")
+        col1, col2 = st.columns(2)
+        with col1:
+            fig_bar = px.bar(x=avg_per_daerah.index, y=avg_per_daerah.values, color=avg_per_daerah.index,
+                             text=avg_per_daerah.values.round(0),
+                             title="Rata-rata Simulasi Pengunjung per Wilayah")
+            st.plotly_chart(fig_bar, use_container_width=True)
+        with col2:
+            fig_pie = px.pie(names=total_per_daerah.index, values=total_per_daerah.values,
+                             title="Distribusi Total Pengunjung per Wilayah")
+            st.plotly_chart(fig_pie, use_container_width=True)
 
-        st.subheader("🥧 Distribusi Total Pengunjung (Pie Chart)")
-        fig_pie = px.pie(names=total_per_daerah.index, values=total_per_daerah.values,
-                         title="Distribusi Total Pengunjung per Wilayah")
-        st.plotly_chart(fig_pie, use_container_width=True)
+        st.subheader("📈 Tren Simulasi (Line Chart)")
+        fig_line = px.line(sim_df, markers=True,
+                           title="Tren Simulasi Monte Carlo Semua Wilayah")
+        fig_line.update_traces(line=dict(width=2))
+        st.plotly_chart(fig_line, use_container_width=True)
+
+        # ========================
+        # 🔍 Kesimpulan Rapi
+        # ========================
+        st.subheader("📌 Kesimpulan Analisis")
+        st.markdown(f"""
+        **1. Rata-rata kunjungan tertinggi:** `{avg_per_daerah.idxmax()}` dengan **{avg_per_daerah.max():,.0f}**.
+        **2. Rata-rata kunjungan terendah:** `{avg_per_daerah.idxmin()}` dengan **{avg_per_daerah.min():,.0f}**.
+        **3. Total kunjungan simulasi:** {int(total_per_daerah.sum()):,}.
+        **4. Wilayah dengan porsi terbesar:** {total_per_daerah.idxmax()} ({round((total_per_daerah.max()/total_per_daerah.sum())*100,2)}% dari total).
+        **5. Rekomendasi:**
+           - Fokus pada persediaan untuk wilayah `{avg_per_daerah.idxmax()}`.
+           - Jika variasi antar bulan tinggi (fluktuasi besar), siapkan kapasitas tambahan.
+        """.replace(",", "."))
     else:
         st.warning("Data tidak tersedia.")
